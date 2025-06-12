@@ -15,11 +15,8 @@ ui.pause()
 file_path = ui.promptFile((('Comma Separated Values File', ('*.csv')),('All files', '*.*')))
 
 # Raise error if file is not a csv file
-ui.err(
-    not file_path.lower().endswith('.csv'),
-    "The selected file is not a csv file.",
-    True
-)
+ui.on_error(not file_path.lower().endswith('.csv'),
+    "The selected file is not a csv file.")
 
 with open(file_path, newline='', encoding='utf-8') as f:
     reader = csv.reader(f)
@@ -35,13 +32,11 @@ expected_headers = ['MKT', 'Zone', 'Restaurant', 'St Address', 'City', 'ST', 'ZI
 missing_headers = [expected_header for expected_header in expected_headers if expected_header not in headers]
 # If there are missing headers
 if len(missing_headers) > 0:
-    message = "The selected file is missing the following expected columns:"
+    missing_headers_msg = "The selected file is missing the following expected columns:"
     for header in missing_headers:
-        message += f'\n{header}'
+        missing_headers_msg += f'\n{header}'
     # Raise error about missing headers
-    ui.err(True,
-           message,
-           True)
+    ui.raise_error(missing_headers_msg)
 
 # Prompt for date range
 ui.clear()
@@ -59,13 +54,13 @@ start_date = parse_date(input('Start date (MM-DD-YY): '))
 end_date = parse_date(input('\nEnd date (MM-DD-YY): '))
 
 # Validate dates
-ui.err(start_date is None or end_date is None,
-       "Entered an invalid date. Dates must be in the format MM-DD-YY.",
-        True)
+ui.on_error(start_date is None or end_date is None,
+    "Entered an invalid date. Dates must be in the format MM-DD-YY.",
+    True)
 
-ui.err(end_date < start_date,
-       "End date cannot be before start date.",
-       True)
+ui.on_error(end_date < start_date,
+    "End date cannot be before start date.",
+    True)
 
 
 filtered_data = [

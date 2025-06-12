@@ -1,3 +1,4 @@
+from functools import partial
 import os, sys, msvcrt, time
 import tkinter
 import tkinter.filedialog
@@ -54,7 +55,7 @@ def pause():
     Print a string while paused with text."""
     msvcrt.getch()
 
-def err(cond: bool, message: str, terminate: bool=False):
+def on_error(cond: bool, message: str, terminate: bool=True):
     """Displays str argument `message` in red on the interface if bool argument `cond` is True.
     Terminates the program if bool argument `terminate` is True.
     """
@@ -66,6 +67,8 @@ def err(cond: bool, message: str, terminate: bool=False):
         showCursor()
         if terminate:
             exit()
+
+raise_error = partial(on_error, cond=True)
 
 def exit():
     """Ends the program.
