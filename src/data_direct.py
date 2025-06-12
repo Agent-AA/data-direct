@@ -79,6 +79,9 @@ print("\033[32mReport(s) successfully generated.\033[33m\n\nThe program will now
 ui.pause()
 
 selected_dir = ui.promptDirectory()
+ui.on_error(selected_dir == '',
+    "No directory was selected.")
+
 output_dir = selected_dir + f'/VEN_REPORT_{start_date.strftime("%m_%d_%y")}'
 os.makedirs(output_dir, exist_ok=True)
 
