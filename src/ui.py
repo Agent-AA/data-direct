@@ -40,7 +40,7 @@ def clear():
 | |__| | (_| | || (_| | |__| | | | |  __/ (__| |_ 
 |_____/ \\__,_|\\__\\__,_|_____/|_|_|  \\___|\\___|\\__|
 
-DataDirect copyright (c) AdDirect Incorporated 2025. Demo version.
+DataDirect copyright (c) AdDirect Incorporated 2025. Version 1.0.0
 """)
 
 def wait(s: int):
