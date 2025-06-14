@@ -5,7 +5,7 @@ import misc.ui as ui
 import misc.utils as utils
 import openpyxl
 import os
-from venues.records import VenueRecord
+from venues.records import NoValidSessionsException, VenueRecord
 
 def generate():
     # Display logotype intro
@@ -59,6 +59,35 @@ def generate():
         ui.print_error(f'An error occured while reading the file. This is likely due to invalid file format. See more details below:\n{e}')
         ui.pause()
         ui.exit()
+    
+    print('Extracting data...')
+    venue_records: set[VenueRecord] = set()
+    # Load data into structures
+    # Iterate through each entry
+    for entry in sheet.iter_rows(min_row=2, values_only=True):
+        # Convert tuple to dict so we can reference by key
+        entry = dict(zip(headers, entry))
+        # Create a new venue (or at least try to)
+        try:
+            new_venue = VenueRecord.from_entry(entry)
+            found = False
+            # And check if it matches an existing venue
+            for existing_venue in venue_records:
+            # If there is a match
+                if new_venue == existing_venue:
+                    # Add new job record to existing venue
+                    existing_venue.add_job_record(entry)  
+                    found = True
+
+            # If no matching venue found, add this one to the set
+            if not found:
+                venue_records.add(new_venue)
+
+        except NoValidSessionsException:
+            ui.print_warning(f'No valid sessions found for job {entry['Job#']}. Skipping this job.')
+        
+        except BaseException:
+            pass  # TODO add some sort of error handling for other invalid jobs?
 
     ui.print_success('File successfully loaded.')
     print('\nFor default values on any of the following questions, continue without entering.')

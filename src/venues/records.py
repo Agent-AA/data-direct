@@ -17,6 +17,16 @@ class VenueRecord:
         self.zip = zip
         self.job_records: set['JobRecord'] = set()
     
+    def __eq__(self, other: 'VenueRecord') -> bool:
+        return (self.market == other.market and
+               self.loc_num == other.loc_num and
+               self.zone == other.zone and
+               self.restaurant == other.restaurant and
+               self.street == other.street and 
+               self.city == other.city and
+               self.state == other.state and
+               self.zip == other.zip)
+    
     def __iter__(self) -> tuple['JobRecord']:
         return (job for job in self.job_records)
 
@@ -44,11 +54,11 @@ class VenueRecord:
             entry['ST'],
             int(entry['ZIP']))
 
-        new_venue.add_record(entry)
+        new_venue.add_job_record(entry)
         
         return new_venue
 
-    def add_record(self, entry: dict[str, str]) -> None:
+    def add_job_record(self, entry: dict[str, str]) -> None:
         """Create a job record for `entry` and add it to this venue's job records
         if the job entry is valid.
         """
@@ -126,27 +136,31 @@ class SessionRecord:
 
         for day in (1, 2, 3):
             for meal_type in ('Lunch', 'Dinner'):
-                day_of_week_key  = f'{type} Day {day}'
-                date_key = f'{type} {day} Date'
-                time_key = f'{type} {day} Time'
+                day_of_week_key  = f'{meal_type} Day {day}'
+                date_key = f'{meal_type} {day} Date'
+                time_key = f'{meal_type} {day} Time'
 
                 # There will not be a session for every meal type and day,
                 # so we just ignore if the datestring returns a ValueError
                 # because the datestring is empty.
                 try:
-                    datestring = f'{entry[date_key]} {entry[time_key]}'
-                    datetime = utils.parse_datetime(datestring)
+                    date_and_time = datetime.datetime.combine(entry[date_key], entry[time_key])
                 except ValueError:
                     continue
 
                 new_session = SessionRecord(
                     meal_type,
                     entry[day_of_week_key],
-                    datetime)
+                    date_and_time)
                     
                 sessions.add(new_session)
         
         if len(sessions) == 0:
-            raise Exception('No valid sessions found in entry.')
+            raise NoValidSessionsException('No valid sessions found in entry.')
         
         return sessions
+    
+class NoValidSessionsException(Exception):
+    """Raised when no valid sessions are found in an entry.
+    """
+    pass
