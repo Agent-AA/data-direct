@@ -31,10 +31,9 @@ def showCursor():
 
 def clear():
     """
-    Clear the terminal."""
+    Clear terminal and display logotype."""
     os.system('cls' if os.name == 'nt' else 'clear')
-    print("""
- _____        _        _____  _               _   
+    print(""" _____        _        _____  _               _   
 |  __ \\      | |      |  __ \\(_)             | |  
 | |  | | __ _| |_ __ _| |  | |_ _ __ ___  ___| |_ 
 | |  | |/ _` | __/ _` | |  | | | '__/ _ \\/ __| __|
@@ -42,7 +41,7 @@ def clear():
 |_____/ \\__,_|\\__\\__,_|_____/|_|_|  \\___|\\___|\\__|
 
 DataDirect copyright (c) AdDirect Incorporated 2025. Version 1.0.0
-""")
+==================================================================""")
 
 def wait(s: int):
     """Wait for s seconds before executing rest of code.
