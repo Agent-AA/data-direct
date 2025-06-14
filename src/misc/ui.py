@@ -1,8 +1,35 @@
-from functools import partial
 import os, sys, msvcrt, time
 import tkinter
 import tkinter.filedialog
-from typing import Callable
+
+def print_error(msg: str):
+    """Prints a message in bright red text to the terminal.
+    """
+    print(f"\033[91m{msg}\033[39m")
+
+def print_warning(msg: str):
+    """Prints a message in bright yellow text to the terminal.
+    """
+    print(f"\033[93m{msg}\033[39m")
+
+def print_success(msg: str):
+    """Prints a message in bright green text to the terminal.
+    """
+    print(f"\033[92m{msg}\033[39m")
+
+def prompt_user(msg: str):
+    """Prints a message in bright blue text to the terminal.
+    """
+    print(f"\033[96m{msg}\033[39m")
+
+def query_user(msg: str, default: str='') -> str:
+    """Prints a message in bright blue text to the terminal and returns user input,
+    or the default value if the user provides no input.
+    """
+    resp = input(f"\033[96m{msg}\033[39m")
+    
+    return resp if resp != '' else default
+     
 
 def promptFile(filetypes) -> str:
     """

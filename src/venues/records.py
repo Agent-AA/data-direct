@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 import datetime
 
-import utils
+import misc.utils as utils
 
 class VenueRecord:
     """A unique venue and its associated job records.

@@ -1,54 +1,111 @@
-import csv, ui
+import csv
+from datetime import datetime
+from dateutil.relativedelta import relativedelta
+import misc.ui as ui
+import misc.utils as utils
+import openpyxl
 import os
 from venues.records import VenueRecord
 
 def generate():
-    # display logotype intro
-    ui.clear()
+    # Display logotype intro
     ui.hideCursor()
-    print('[Begin Program]')
-    print('This program will now prompt you to select an Excel (.xlsx) file containing venue data. Press any key to continue.')
+    ui.prompt_user('\nThis program will now prompt you to select an Excel (.xlsx) file containing venue data. Press any key to continue.')
     ui.pause()
 
-    # prompt for excel file
-    file_path = ui.promptFile((('Excel Spreadsheet', ('*.xlsx')),('All files', '*.*')))
+    # Prompt for excel file
+    #file_path = ui.promptFile((('Excel Spreadsheet', ('*.xlsx')),('All files', '*.*')))
+    file_path = 'C:\\Users\\alexc\\Documents\\GitHub\\addirectai\\test\\test_input.xlsx'
 
-    with open(file_path, newline='', encoding='utf-8') as f:
-        reader = csv.reader(f)
-        headers = next(reader)
-        data = [dict(zip(headers, row)) for row in reader]
-        # Add every venue to the venue_list, but ensure no duplicates
-        for entry in data:
-            if VenueRecord.not_in_list(VenueRecord(entry)): # TODO not_in_list removd. Use `in` operator instead.
-                VenueRecord(entry, True)
+    # Validate file path
+    if file_path == '':
+        ui.print_error('No file was selected.')
+        ui.pause()
+        ui.exit()
 
-    # Ensure that the loaded file has the correct headers, and if not, tell user.
-    expected_headers = ['MKT', 'Zone', 'Restaurant', 'St Address', 'City', 'ST', 'ZIP', 'Month', 'Year', 'Lunch 1 Date', 'Lunch 1 Time', 'Lunch 2 Date', 'Lunch 2 Time', 'Lunch 3 Date', 'Lunch 3 Time', 'Lunch 4 Date', 'Lunch 4 Time', 'Dinner 1 Date', 'Dinner 1 Time', 'Dinner 2 Date', 'Dinner 2 Time', 'Dinner 3 Date', 'Dinner 3 Time', 'RSVPs']
-    missing_headers = [expected_header for expected_header in expected_headers if expected_header not in headers]
-    # If there are missing headers
-    if len(missing_headers) > 0:
-        missing_headers_msg = "The selected file is missing the following expected columns:"
-        for header in missing_headers:
-            missing_headers_msg += f'\n{header}'
-        # Raise error about missing headers
-        ui.raise_error(missing_headers_msg)
+    try:
+        # Read file with openpyxl
+        print('Loading Excel file...')
+        workboox = openpyxl.load_workbook(file_path, data_only=True)
+        sheet = workboox.active
+        headers = [cell.value for cell in sheet[1]]
 
-    # Prompt for date range
-    ui.clear()
+        # Validate headers
+        print('Validating file headers...')
+        expected_headers = [
+            'Job#', 'User', 'MKT', 'LOC#', 'Week', 'Zone', 'Restaurant',
+            'St Address', 'City', 'ST', 'ZIP', 'Mail Piece', 'Month', 'Year',
+            '# Sessions', 'Qty', 'RSVPs', 'RMI',
+            
+            'Lunch Day 1', 'Lunch 1 Date', 'Lunch 1 Time',
+            'Lunch Day 2', 'Lunch 2 Date', 'Lunch 2 Time',
+            'Lunch Day 3', 'Lunch 3 Date', 'Lunch 3 Time',
+            'Dinner Day 1', 'Dinner 1 Date', 'Dinner 1 Time',
+            'Dinner Day 2', 'Dinner 2 Date', 'Dinner 2 Time',
+            'Dinner Day 3', 'Dinner 3 Date', 'Dinner 3 Time',
+            ]
+        
+        missing_headers = [exp_hdr for exp_hdr in expected_headers if exp_hdr not in headers]
+        # If there are missing headers
+        if len(missing_headers) > 0:
+            missing_headers_msg = 'The selected file is missing the following expected columns:'
+            for header in missing_headers:
+                missing_headers_msg += f'\n{header}'
+            ui.print_error(missing_headers_msg)
+            ui.pause()
+            ui.exit()
+    
+    except BaseException as e:
+        ui.print_error(f'An error occured while reading the file. This is likely due to invalid file format. See more details below:\n{e}')
+        ui.pause()
+        ui.exit()
+
+    ui.print_success('File successfully loaded.')
+    print('\nFor default values on any of the following questions, continue without entering.')
+    
+    # Query historical data range
+    print('Please enter the historical cutoff date for these data.')
     ui.showCursor()
+    valid = False
+    hist_start_date = None
+    while not valid:
+        try:
+            hist_start_date = utils.parse_datetime(ui.query_user('Start date (MM/DD/YY): ',
+                                                  (datetime.now() - relativedelta(months=16)).strftime('%m/%d/%y')))
+        except ValueError:
+            ui.print_error('The date entered is not valid. Please try again.')
+            continue
 
-    start_date = parse_date(input('Start date (MM-DD-YY): '))
-    end_date = parse_date(input('\nEnd date (MM-DD-YY): '))
+        valid = True
 
-    # Validate dates
-    ui.on_error(start_date is None or end_date is None,
-        "Entered an invalid date. Dates must be in the format MM-DD-YY.",
-        True)
+    # Query scheduling dates
+    print('Please enter the scheduling period for this report.')
+    valid = False
+    start_date, end_date = (None, None)
+    while not valid:
+        try:
+            start_date = utils.parse_datetime(ui.query_user('Start date (MM/DD/YY): '))
+            end_date = utils.parse_datetime(ui.query_user('End date (MM/DD/YY): '))
+        except ValueError:
+            ui.print_error('The entered date is not valid (scheduling dates do not have a default). Please try again.')
+            continue
 
-    ui.on_error(end_date < start_date,
-        "End date cannot be before start date.",
-        True)
+        # Make sure start_date is before end_date
+        if start_date > end_date:
+            ui.print_error('Start date cannot be after end date. Please try again.')
+            continue
 
+        valid = True
+    
+    # Query minimum RSVPs
+    min_rsvps = int(ui.query_user('\nMinimum RSVPs: ', '16'))
+    # Query venue cap
+    num_venues = int(ui.query_user('Number of venues per market: ', '20'))
+    # Query specific markets
+    print('\nFor specific markets, use market codes separated by spaces (e.g., "HOU PDX...")')
+    markets = ui.query_user('Specific Markets: ').split(' ')
+
+    # TODO ---
 
     filtered_data = [
         venue for venue in VenueRecord.venue_list if not venue.within_four_months(start_date)
