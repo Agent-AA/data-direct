@@ -1,7 +1,7 @@
 import datetime
 
 
-def parse_datetime(datetime_str: str) -> datetime.datetime | None:
+def parse_datetime(datetime_str: str) -> datetime.datetime:
     """Parses a datetime string in `MM/YY(YY)`, `MM/DD/YY(YY)`, 
     or `MM/DD/YY(YY) II:MM (AM|PM)` format.
     Returns `None` if the datetime string is formatted invalidly.
@@ -13,4 +13,4 @@ def parse_datetime(datetime_str: str) -> datetime.datetime | None:
             return datetime.datetime.strptime(datetime_str, format)
         except ValueError:
             continue
-    return None
+    raise ValueError(f'Datetime string {datetime_str} is not in a valid format.')
