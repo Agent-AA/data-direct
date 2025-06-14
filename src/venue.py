@@ -1,10 +1,9 @@
 from dataclasses import dataclass
 import datetime
 
-import ui
 import utils
 
-class Venue:
+class VenueRecord:
     """A unique venue and its associated job records.
     """
     def __init__(self, market: str, loc_num: int, zone: str, restaurant: str, street: str, city: str, state: str, zip: int):
@@ -32,10 +31,10 @@ class Venue:
         return total_rsvps / len(self.job_records)
 
     @staticmethod
-    def from_entry(entry: dict[str, str]) -> 'Venue':
+    def from_entry(entry: dict[str, str]) -> 'VenueRecord':
         """Create a new venue object from an entry dictionary.
         """
-        new_venue = Venue(
+        new_venue = VenueRecord(
             entry['MKT'],
             int(entry['LOC#']),
             entry['Zone'],

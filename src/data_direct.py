@@ -3,7 +3,7 @@ __version__ = "1.0.0"
 import csv, ui
 import os
 import datetime
-from venue import Venue
+from venue import VenueRecord
 
 # display logotype intro
 ui.clear()
@@ -24,8 +24,8 @@ with open(file_path, newline='', encoding='utf-8') as f:
     data = [dict(zip(headers, row)) for row in reader]
     # Add every venue to the venue_list, but ensure no duplicates
     for entry in data:
-        if Venue.not_in_list(Venue(entry)):
-            Venue(entry, True)
+        if VenueRecord.not_in_list(VenueRecord(entry)): # TODO not_in_list removd. Use `in` operator instead.
+            VenueRecord(entry, True)
 
 # Ensure that the loaded file has the correct headers, and if not, tell user.
 expected_headers = ['MKT', 'Zone', 'Restaurant', 'St Address', 'City', 'ST', 'ZIP', 'Month', 'Year', 'Lunch 1 Date', 'Lunch 1 Time', 'Lunch 2 Date', 'Lunch 2 Time', 'Lunch 3 Date', 'Lunch 3 Time', 'Lunch 4 Date', 'Lunch 4 Time', 'Dinner 1 Date', 'Dinner 1 Time', 'Dinner 2 Date', 'Dinner 2 Time', 'Dinner 3 Date', 'Dinner 3 Time', 'RSVPs']
@@ -42,14 +42,6 @@ if len(missing_headers) > 0:
 ui.clear()
 ui.showCursor()
 
-def parse_date(date_str):
-    for fmt in ("%m/%d/%y", "%m-%d-%y"):
-        try:
-            return datetime.datetime.strptime(date_str, fmt)
-        except ValueError:
-            continue
-    return None
-
 start_date = parse_date(input('Start date (MM-DD-YY): '))
 end_date = parse_date(input('\nEnd date (MM-DD-YY): '))
 
@@ -64,7 +56,7 @@ ui.on_error(end_date < start_date,
 
 
 filtered_data = [
-    venue for venue in Venue.venue_list if not venue.within_four_months(start_date)
+    venue for venue in VenueRecord.venue_list if not venue.within_four_months(start_date)
 ]
 
 filtered_data.sort(key=lambda x: (x.attrib('MKT'), -x.average_rsvps))
