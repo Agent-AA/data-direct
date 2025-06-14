@@ -85,7 +85,7 @@ class JobRecord:
         return (session for session in self.sessions)
     
     @staticmethod
-    def from_entry(entry: dict[str, str]) -> 'JobRecord' | None:
+    def from_entry(entry: dict[str, str]) -> 'JobRecord':
         """Create a job record from an entry dictionary.
         Returns `None` if unable to create an the job.
         """
