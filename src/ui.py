@@ -56,8 +56,10 @@ def pause():
     msvcrt.getch()
 
 def on_error(cond: bool, message: str, terminate: bool=True):
-    """Displays str argument `message` in red on the interface if bool argument `cond` is True.
+    """Displays `message` in red on the interface if `cond` is True.
     Terminates the program if bool argument `terminate` is True.
+
+    If `cond` is always True, then `raise_error` should be used instead.
     """
     if cond:
         clear()
