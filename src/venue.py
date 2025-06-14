@@ -131,15 +131,14 @@ class SessionRecord:
                 date_key = f'{type} {day} Date'
                 time_key = f'{type} {day} Time'
 
-                datestring = f'{entry[date_key]} {entry[time_key]}'
-                datetime = utils.parse_datetime(datestring)
-
-                # If datetime is None but datestring is not empty,
-                # it means that a datetime string is invalidly formatted.
-                if datetime is None and datestring != '':
-                    raise ValueError(
-                        f'Invalid datetime format for {meal_type} {day} in job {entry["Job#"]}.'
-                    )
+                # There will not be a session for every meal type and day,
+                # so we just ignore if the datestring returns a ValueError
+                # because the datestring is empty.
+                try:
+                    datestring = f'{entry[date_key]} {entry[time_key]}'
+                    datetime = utils.parse_datetime(datestring)
+                except ValueError:
+                    continue
 
                 new_session = SessionRecord(
                     meal_type,
@@ -147,5 +146,8 @@ class SessionRecord:
                     datetime)
                     
                 sessions.add(new_session)
+        
+        if len(sessions) == 0:
+            raise Exception('No valid sessions found in entry.')
         
         return sessions
