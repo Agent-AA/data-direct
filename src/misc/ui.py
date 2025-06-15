@@ -10,7 +10,10 @@ def print_error(msg: str):
 def print_warning(msg: str):
     """Prints a message in bright yellow text to the terminal.
     """
-    print(f"\033[93m{msg}\033[39m")
+    print(warning(msg))
+
+def warning(msg: str) -> str:
+    return f"\033[93m{msg}\033[39m"
 
 def print_success(msg: str):
     """Prints a message in bright green text to the terminal.

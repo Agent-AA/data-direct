@@ -1,3 +1,4 @@
+from collections import defaultdict
 import csv
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
@@ -5,6 +6,7 @@ import misc.ui as ui
 import misc.utils as utils
 import openpyxl
 import os
+from tqdm import tqdm
 from venues.records import NoValidSessionsException, VenueRecord
 
 def generate():
@@ -60,13 +62,45 @@ def generate():
         ui.pause()
         ui.exit()
     
+    # Query for historical data range
+    print('Please enter the historical cutoff date for these data.')
+    ui.showCursor()
+    valid = False
+    cutoff_date = None
+    while not valid:
+        try:
+            cutoff_date = utils.parse_datetime(ui.query_user('Start date (MM/DD/YY): ',
+                                                  (datetime.now() - relativedelta(months=16)).strftime('%m/%d/%y')))
+        except ValueError:
+            ui.print_error('The date entered is not valid. Please try again.')
+            continue
+
+        valid = True
+
     print('Extracting data...')
     venue_records: set[VenueRecord] = set()
     # Load data into structures
     # Iterate through each entry
-    for entry in sheet.iter_rows(min_row=2, values_only=True):
+    for entry in tqdm(sheet.iter_rows(min_row=2, values_only=True), total=sheet.max_row - 1):
+        # If entry contains a date before cutoff date, don't evaluate
+        outdated = False
+        for val in entry:
+            try:
+                if val < cutoff_date:
+                    outdated = True
+                    break
+            except:
+                pass
+        if outdated:
+            continue
+
         # Convert tuple to dict so we can reference by key
         entry = dict(zip(headers, entry))
+
+        # If no job id, then there's not really an entry here
+        if entry['Job#'] is None:
+            continue
+
         # Create a new venue (or at least try to)
         try:
             new_venue = VenueRecord.from_entry(entry)
@@ -84,35 +118,25 @@ def generate():
                 venue_records.add(new_venue)
 
         except NoValidSessionsException:
-            ui.print_warning(f'No valid sessions found for job {entry['Job#']}. Skipping this job.')
-        
-        except BaseException:
-            if entry['Job#'] is not None:
-                #ui.print_warning(f'Job {entry['Job#']} is invalidly formatted. Skipping job.')
-                # TODO - printing a warning is too verbose. Maybe do something else?
-                pass
+            #tqdm.write(ui.warning(f'No valid sessions found for job {entry['Job#']}. Skipping this job.'))
+            pass
+
+        except (TypeError, ValueError):
+            #if entry['Job#'] is not None:
+            #    tqdm.write(ui.warning(f'Job {entry['Job#']} is invalidly formatted. Skipping this job.'))
+            pass
+
+        #except BaseException:
+        #    if entry['Job#'] is not None:
+        #        #ui.print_warning(f'Job {entry['Job#']} is invalidly formatted. Skipping job.')
+        #        # TODO - printing a warning is too verbose. Maybe do something else?
+        #        pass
 
     ui.print_success('File successfully loaded.')
-    print('\nFor default values on any of the following questions, continue without entering.')
 
     # ----- QUERY USER FOR PARAMETERS -----
-    # Query historical data range
-    print('Please enter the historical cutoff date for these data.')
-    ui.showCursor()
-    valid = False
-    hist_start_date = None
-    while not valid:
-        try:
-            hist_start_date = utils.parse_datetime(ui.query_user('Start date (MM/DD/YY): ',
-                                                  (datetime.now() - relativedelta(months=16)).strftime('%m/%d/%y')))
-        except ValueError:
-            ui.print_error('The date entered is not valid. Please try again.')
-            continue
-
-        valid = True
-
     # Query scheduling dates
-    print('Please enter the scheduling period for this report.')
+    print('\nPlease enter the scheduling period for this report.')
     valid = False
     start_date, end_date = (None, None)
     while not valid:
@@ -130,8 +154,10 @@ def generate():
 
         valid = True
     
+    
+    print('\nFor default values on any of the following questions, continue without entering.')
     # Query minimum RSVPs
-    min_rsvps = int(ui.query_user('\nMinimum RSVPs: ', '16'))
+    min_rsvps = int(ui.query_user('Minimum RSVPs: ', '16'))
     # Query venue cap
     num_venues = int(ui.query_user('Number of venues per market: ', '20'))
     # Query specific markets
@@ -141,49 +167,67 @@ def generate():
     # SORT DATA
     # Exclude venues...
     # 1. Whose average RSVPs do not meet min_rsvps, and
-    # 2. Who have had a job within the last 4 months.
+    # 2. Who are in a zone which has had a job within the last four months
     #
     # Sort venues...
-    # If venue had 
+    # If venue had a session within two weeks last year of scheduling period 
 
-    filtered_data = [
-        venue for venue in VenueRecord.venue_list if not venue.within_four_months(start_date)
-    ]
+    print('Performing set exclusion...')
+    # We want to exclude all zones that have had an event within four months
+    saturated_zones = {
+        venue.zone for venue in venue_records if venue.within_four_months(start_date)
+    }
 
-    filtered_data.sort(key=lambda x: (x.attrib('MKT'), -x.average_rsvps))
-    filtered_data = [
-        venue.dict_repr for venue in filtered_data
-    ]
+    # Filter by saturated zones and minimum rsvps
+    filtered_data = {
+        venue for venue in venue_records
+        if (venue.zone not in saturated_zones
+            and venue.average_rsvps >= min_rsvps)
+    }
 
-    # Write to CSV
-    ui.clear()
-    ui.hideCursor()
-    print("\033[32mReport(s) successfully generated.\033[33m\n\nThe program will now prompt you to pick an output directory. Press any key to continue.\033[39m")
-    ui.pause()
+    print('Computing criterion optimizations...')
+    sorted_by_rsvps = sorted(filtered_data, key=lambda venue: venue.average_rsvps)
+    sorted_data = sorted(sorted_by_rsvps, key=lambda venue: venue.around_time_last_year(start_date, end_date, prox_weeks=2))
 
-    selected_dir = ui.promptDirectory()
-    ui.on_error(selected_dir == '',
-        "No directory was selected.")
+    ui.print_success('Data successfully transformed.')
+
+    # Prepare to output data
+    ui.prompt_user('\nThis program will now prompt you to select an ouput directory. Press any key to continue.')
+    #selected_dir = ui.promptDirectory()
+    selected_dir = 'C:\\Users\\alexc\\Documents\\GitHub\\addirectai\\test'
+
+    if selected_dir == '':
+        ui.print_warning('No directory selected. Terminating program.')
+        ui.pause()
+        ui.exit()
 
     output_dir = selected_dir + f'/VEN_REPORT_{start_date.strftime("%m_%d_%y")}'
     os.makedirs(output_dir, exist_ok=True)
 
-    from collections import defaultdict
-    market_groups = defaultdict(list)
-    for venue in filtered_data:
-        market_groups[venue['MKT']].append(venue)
+    print('Classifying records by market...')
+    venues_by_market = defaultdict(list[VenueRecord])
+    for venue in sorted_data:
+        venues_by_market[venue.market].append(venue)
+    
+    print('Writing records to new files...')
+    # Write to new excel file
+    for market, venues in venues_by_market.items():
+        wb = openpyxl.Workbook()
+        ws = wb.active
 
-    output_files = []
-    for mkt, venues in market_groups.items():
-        filename = f"{mkt}_{start_date.strftime("%m_%d_%y")}.csv"
-        file_path = os.path.join(output_dir, filename)
-        with open(file_path, 'w', newline='', encoding='utf-8') as f:
-            writer = csv.DictWriter(f, fieldnames=['MKT','Zone','Restaurant','St Address','City','ST','ZIP'])
-            writer.writeheader()
-            writer.writerows(venues)
-        output_files.append(file_path)
+        headers = [
+            'Job#', 'User', 'MKT', 'LOC#', 'Week', 'Zone',
+            'Restaurant', 'St Address', 'City', 'ST', 'ZIP',
+            'Mail Piece', 'Month', 'Year', '# Sessions',
+            'Session Type', 'Qty', 'RSVPs', 'RMI']
 
-    ui.clear()
-    print(f"\033[32mReport successfully saved to {output_dir}. The program will automatically terminate in 3 seconds.")
-    ui.wait(3)
+        ws.append(headers)
+        for venue in venues:
+            row = venue.to_entry()
+            ws.append(row)
+        file_path = os.path.join(output_dir, f'{market}_{start_date.strftime("%m_%d_%y")}.xlsx')
+        wb.save(file_path)
+
+    ui.print_success(f"Report successfully saved to {output_dir}.")
+    ui.pause()
     ui.exit()
