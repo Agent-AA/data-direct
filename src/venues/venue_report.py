@@ -219,7 +219,7 @@ def generate():
             'Job#', 'User', 'MKT', 'LOC#', 'Week', 'Zone',
             'Restaurant', 'St Address', 'City', 'ST', 'ZIP',
             'Mail Piece', 'Month', 'Year', '# Sessions',
-            'Session Type', 'Qty', 'RSVPs', 'RMI']
+            'Session Type', 'Qty', 'RSVPs', 'Average RSVPs', 'RMI']
 
         ws.append(headers)
         for venue in venues:

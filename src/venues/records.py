@@ -91,6 +91,7 @@ class VenueRecord:
             self.latest_job.num_sessions,
             self.latest_job.session_type,
             self.latest_job.quantity,
+            self.latest_job.rvsps,
             self.average_rsvps,
             self.latest_job.rmi
         )
