@@ -83,6 +83,7 @@ class VenueRecord:
             self.restaurant,
             self.street,
             self.city,
+            self.state,
             self.zip,
             self.latest_job.mail_piece,
             self.latest_job.month,
