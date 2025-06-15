@@ -48,7 +48,7 @@ class VenueRecord:
         for job in self.job_records:
             if (latest_job is None
                 or latest_job.end_date < job.end_date):
-                latest_job == job
+                latest_job = job
         
         return latest_job
 
