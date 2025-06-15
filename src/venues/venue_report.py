@@ -23,6 +23,7 @@ def generate():
         ui.pause()
         ui.exit()
 
+    # ----- BEGIN LOADING FILE -----
     try:
         # Read file with openpyxl
         print('Loading Excel file...')
@@ -54,7 +55,6 @@ def generate():
             ui.print_error(missing_headers_msg)
             ui.pause()
             ui.exit()
-    
     except BaseException as e:
         ui.print_error(f'An error occured while reading the file. This is likely due to invalid file format. See more details below:\n{e}')
         ui.pause()
@@ -73,7 +73,7 @@ def generate():
             found = False
             # And check if it matches an existing venue
             for existing_venue in venue_records:
-            # If there is a match
+                # If there is a match
                 if new_venue == existing_venue:
                     # Add new job record to existing venue
                     existing_venue.add_job_record(entry)  
@@ -87,11 +87,13 @@ def generate():
             ui.print_warning(f'No valid sessions found for job {entry['Job#']}. Skipping this job.')
         
         except BaseException:
-            pass  # TODO add some sort of error handling for other invalid jobs?
+            if entry['Job#'] is not None:
+                ui.print_warning(f'Job {entry['Job#']} is invalidly formatted. Skipping job.')
 
     ui.print_success('File successfully loaded.')
     print('\nFor default values on any of the following questions, continue without entering.')
-    
+
+    # ----- QUERY USER FOR PARAMETERS -----
     # Query historical data range
     print('Please enter the historical cutoff date for these data.')
     ui.showCursor()
@@ -134,7 +136,13 @@ def generate():
     print('\nFor specific markets, use market codes separated by spaces (e.g., "HOU PDX...")')
     markets = ui.query_user('Specific Markets: ').split(' ')
 
-    # TODO ---
+    # SORT DATA
+    # Exclude venues...
+    # 1. Whose average RSVPs do not meet min_rsvps, and
+    # 2. Who have had a job within the last 4 months.
+    #
+    # Sort venues...
+    # If venue had 
 
     filtered_data = [
         venue for venue in VenueRecord.venue_list if not venue.within_four_months(start_date)
