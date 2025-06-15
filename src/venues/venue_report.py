@@ -77,7 +77,7 @@ def generate():
 
         valid = True
 
-    print('Extracting data...')
+    print('Extracting data. This may take a minute...')
     venue_records: set[VenueRecord] = set()
     # Load data into structures
     # Iterate through each entry
@@ -189,7 +189,7 @@ def generate():
     sorted_by_rsvps = sorted(filtered_data, key=lambda venue: venue.average_rsvps, reverse=True)
     sorted_data = sorted(sorted_by_rsvps, key=lambda venue: venue.around_time_last_year(start_date, end_date, prox_weeks=2), reverse=True)
 
-    ui.print_success('Data successfully transformed.')
+    ui.print_success('Data have been filtered and sorted.')
 
     # Prepare to output data
     ui.prompt_user('\nThis program will now prompt you to select an ouput directory. Press any key to continue.')
@@ -212,6 +212,10 @@ def generate():
     print('Writing records to new files...')
     # Write to new excel file
     for market, venues in venues_by_market.items():
+        # If user requested specific markets, halt for non-specified markets
+        if len(markets) != 0 and market not in markets:
+            continue
+
         wb = openpyxl.Workbook()
         ws = wb.active
 
@@ -222,9 +226,16 @@ def generate():
             'Session Type', 'Qty', 'RSVPs', 'Average RSVPs', 'RMI']
 
         ws.append(headers)
+
+        # This is for capping number of written venues
+        i = 0
+
         for venue in venues:
-            row = venue.to_entry()
-            ws.append(row)
+            if i < num_venues:
+                row = venue.to_entry()
+                ws.append(row)
+                i += 1
+
         file_path = os.path.join(output_dir, f'{market}_{start_date.strftime("%m_%d_%y")}.xlsx')
         wb.save(file_path)
 
