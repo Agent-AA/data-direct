@@ -88,7 +88,9 @@ def generate():
         
         except BaseException:
             if entry['Job#'] is not None:
-                ui.print_warning(f'Job {entry['Job#']} is invalidly formatted. Skipping job.')
+                #ui.print_warning(f'Job {entry['Job#']} is invalidly formatted. Skipping job.')
+                # TODO - printing a warning is too verbose. Maybe do something else?
+                pass
 
     ui.print_success('File successfully loaded.')
     print('\nFor default values on any of the following questions, continue without entering.')
