@@ -132,7 +132,7 @@ def generate():
         #        # TODO - printing a warning is too verbose. Maybe do something else?
         #        pass
 
-    ui.print_success('File successfully loaded.')
+    ui.print_success('Data successfully extracted from file.')
 
     # ----- QUERY USER FOR PARAMETERS -----
     # Query scheduling dates
@@ -172,7 +172,7 @@ def generate():
     # Sort venues...
     # If venue had a session within two weeks last year of scheduling period 
 
-    print('Performing set exclusion...')
+    print('Executing set exclusions...')
     # We want to exclude all zones that have had an event within four months
     saturated_zones = {
         venue.zone for venue in venue_records if venue.within_four_months(start_date)
@@ -185,7 +185,7 @@ def generate():
             and venue.average_rsvps >= min_rsvps)
     }
 
-    print('Computing criterion optimizations...')
+    print('Performing optimization...')
     sorted_by_rsvps = sorted(filtered_data, key=lambda venue: venue.average_rsvps, reverse=True)
     sorted_data = sorted(sorted_by_rsvps, key=lambda venue: venue.around_time_last_year(start_date, end_date, prox_weeks=2), reverse=True)
 
@@ -201,7 +201,7 @@ def generate():
         ui.pause()
         ui.exit()
 
-    output_dir = selected_dir + f'/VEN_REPORT_{start_date.strftime("%m_%d_%y")}'
+    output_dir = selected_dir + f'\\VEN_REPORT_{start_date.strftime("%m_%d_%y")}'
     os.makedirs(output_dir, exist_ok=True)
 
     print('Classifying records by market...')
@@ -239,6 +239,6 @@ def generate():
         file_path = os.path.join(output_dir, f'{market}_{start_date.strftime("%m_%d_%y")}.xlsx')
         wb.save(file_path)
 
-    ui.print_success(f"Report successfully saved to {output_dir}.")
+    ui.print_success(f"Report(s) saved to {output_dir}.")
     ui.pause()
     ui.exit()
