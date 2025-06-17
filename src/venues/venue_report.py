@@ -192,6 +192,8 @@ def generate():
 
     # Prepare to output data
     ui.prompt_user('\nThis program will now prompt you to select an ouput directory. Press any key to continue.')
+    ui.pause()
+    
     selected_dir = ui.promptDirectory()
     #selected_dir = 'C:\\Users\\alexc\\Documents\\GitHub\\addirectai\\test'
 
@@ -201,7 +203,7 @@ def generate():
         ui.exit()
 
     print('Creating output directory...')
-    output_dir = selected_dir + f'/VEN_REPORT_{start_date.strftime("%m_%d_%y")}'
+    output_dir = selected_dir + f'\\VEN_REPORT_{start_date.strftime("%m_%d_%y")}'
     os.makedirs(output_dir, exist_ok=True)
 
     print('Classifying records by market...')
@@ -213,7 +215,7 @@ def generate():
     # Write to new excel file
     for market, venues in venues_by_market.items():
         # If user requested specific markets, halt for non-specified markets
-        if len(markets) != 0 and market not in markets:
+        if markets[0] != '' and market not in markets:
             continue
 
         wb = openpyxl.Workbook()
