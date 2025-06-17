@@ -1,5 +1,4 @@
 from collections import defaultdict
-import csv
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 import misc.ui as ui
@@ -16,8 +15,8 @@ def generate():
     ui.pause()
 
     # Prompt for excel file
-    #file_path = ui.promptFile((('Excel Spreadsheet', ('*.xlsx')),('All files', '*.*')))
-    file_path = 'C:\\Users\\alexc\\Documents\\GitHub\\addirectai\\test\\test_input.xlsx'
+    file_path = ui.promptFile((('Excel Spreadsheet', ('*.xlsx')),('All files', '*.*')))
+    #file_path = 'C:\\Users\\alexc\\Documents\\GitHub\\addirectai\\test\\test_input.xlsx'
 
     # Validate file path
     if file_path == '':
@@ -63,7 +62,7 @@ def generate():
         ui.exit()
     
     # Query for historical data range
-    print('Please enter the historical cutoff date for these data.')
+    print('Please enter the historical cutoff date for these data (default is 16 months prior to today).')
     ui.showCursor()
     valid = False
     cutoff_date = None
@@ -132,11 +131,11 @@ def generate():
         #        # TODO - printing a warning is too verbose. Maybe do something else?
         #        pass
 
-    ui.print_success('Data successfully extracted from file.')
+    ui.print_success('Extraction complete.')
 
     # ----- QUERY USER FOR PARAMETERS -----
     # Query scheduling dates
-    print('\nPlease enter the scheduling period for this report.')
+    print('\nPlease enter the scheduling period for this report. Scheduling period does not support default values.')
     valid = False
     start_date, end_date = (None, None)
     while not valid:
@@ -144,7 +143,7 @@ def generate():
             start_date = utils.parse_datetime(ui.query_user('Start date (MM/DD/YY): '))
             end_date = utils.parse_datetime(ui.query_user('End date (MM/DD/YY): '))
         except ValueError:
-            ui.print_error('The entered date is not valid (scheduling dates do not have a default). Please try again.')
+            ui.print_error('The entered date is not valid. Please try again.')
             continue
 
         # Make sure start_date is before end_date
@@ -155,7 +154,7 @@ def generate():
         valid = True
     
     
-    print('\nFor default values on any of the following questions, continue without entering.')
+    print('\nFor default values on any of the following questions, continue without entering anything.')
     # Query minimum RSVPs
     min_rsvps = int(ui.query_user('Minimum RSVPs: ', '16'))
     # Query venue cap
@@ -185,23 +184,24 @@ def generate():
             and venue.average_rsvps >= min_rsvps)
     }
 
-    print('Performing optimization...')
+    print('Performing optimizations...')
     sorted_by_rsvps = sorted(filtered_data, key=lambda venue: venue.average_rsvps, reverse=True)
     sorted_data = sorted(sorted_by_rsvps, key=lambda venue: venue.around_time_last_year(start_date, end_date, prox_weeks=2), reverse=True)
 
-    ui.print_success('Data have been filtered and sorted.')
+    ui.print_success('Exclusions and optimizations complete.')
 
     # Prepare to output data
     ui.prompt_user('\nThis program will now prompt you to select an ouput directory. Press any key to continue.')
-    #selected_dir = ui.promptDirectory()
-    selected_dir = 'C:\\Users\\alexc\\Documents\\GitHub\\addirectai\\test'
+    selected_dir = ui.promptDirectory()
+    #selected_dir = 'C:\\Users\\alexc\\Documents\\GitHub\\addirectai\\test'
 
     if selected_dir == '':
         ui.print_warning('No directory selected. Terminating program.')
         ui.pause()
         ui.exit()
 
-    output_dir = selected_dir + f'\\VEN_REPORT_{start_date.strftime("%m_%d_%y")}'
+    print('Creating output directory...')
+    output_dir = selected_dir + f'/VEN_REPORT_{start_date.strftime("%m_%d_%y")}'
     os.makedirs(output_dir, exist_ok=True)
 
     print('Classifying records by market...')
@@ -239,6 +239,6 @@ def generate():
         file_path = os.path.join(output_dir, f'{market}_{start_date.strftime("%m_%d_%y")}.xlsx')
         wb.save(file_path)
 
-    ui.print_success(f"Report(s) saved to {output_dir}.")
+    ui.print_success(f"Report(s) have been saved. You can safely close the program.")
     ui.pause()
     ui.exit()
