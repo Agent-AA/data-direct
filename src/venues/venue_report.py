@@ -203,7 +203,7 @@ def generate():
         ui.exit()
 
     print('Creating output directory...')
-    output_dir = selected_dir + f'\\VEN_REPORT_{start_date.strftime("%m_%d_%y")}'
+    output_dir = selected_dir + f'\\VEN_REPORT_{start_date.strftime("%m_%d_%y")}-{end_date.strftime("%m_%d_%y")}'
     os.makedirs(output_dir, exist_ok=True)
 
     print('Classifying records by market...')
@@ -238,7 +238,7 @@ def generate():
                 ws.append(row)
                 i += 1
 
-        file_path = os.path.join(output_dir, f'{market}_{start_date.strftime("%m_%d_%y")}.xlsx')
+        file_path = os.path.join(output_dir, f'{market}_{start_date.strftime("%m_%d_%y")}-{end_date.strftime("%m_%d_%y")}.xlsx')
         wb.save(file_path)
 
     ui.print_success(f"Report(s) have been saved. You can safely close the program.")
