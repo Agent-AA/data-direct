@@ -98,11 +98,14 @@ class VenueRecord:
             self.latest_job.rmi
         )
     
-    def within_four_months(self, ref_date: datetime) -> bool:
+    def within(self, weeks: int, ref_date: datetime) -> bool:
         """Returns `True` if at least one session in a job took
-        place within four months of `ref_date`.
+        place within a certain number of weeks from `ref_date`.
+
+        E.g., `SomeVenue.within(16, datetime.now())` would return `True`
+        if `SomeVenue` had a job within 16 weeks of today.
         """
-        threshold_date = ref_date - relativedelta(months=4)
+        threshold_date = ref_date - relativedelta(weeks=weeks)
         for job in self.job_records:
             for session in job.sessions:
                 if session.datetime > threshold_date:

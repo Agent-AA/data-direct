@@ -68,7 +68,7 @@ def generate():
     cutoff_date = None
     while not valid:
         try:
-            cutoff_date = utils.parse_datetime(ui.query_user('Start date (MM/DD/YY): ',
+            cutoff_date = utils.parse_datetime(ui.query_user('Cutoff date (MM/DD/YY): ',
                                                   (datetime.now() - relativedelta(months=16)).strftime('%m/%d/%y')))
         except ValueError:
             ui.print_error('The date entered is not valid. Please try again.')
@@ -155,6 +155,8 @@ def generate():
     
     
     print('\nFor default values on any of the following questions, continue without entering anything.')
+    # Query saturation period
+    saturation_period = int(ui.query_user('Zone Saturation Period (weeks): ', '16'))
     # Query minimum RSVPs
     min_rsvps = int(ui.query_user('Minimum RSVPs: ', '16'))
     # Query venue cap
@@ -174,7 +176,8 @@ def generate():
     print('Executing set exclusions...')
     # We want to exclude all zones that have had an event within four months
     saturated_zones = {
-        venue.zone for venue in venue_records if venue.within_four_months(start_date)
+        venue.zone for venue in venue_records 
+        if venue.within(weeks=saturation_period, ref_date=start_date)
     }
 
     # Filter by saturated zones and minimum rsvps
