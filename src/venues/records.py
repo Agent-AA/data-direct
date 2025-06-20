@@ -4,6 +4,8 @@ import datetime
 import math
 import re
 
+from venues.errors import HashError, NoValidSessionsException
+
 class VenueRecord:
     """A unique venue and its associated job records.
     """
@@ -267,13 +269,3 @@ class SessionRecord:
             raise NoValidSessionsException('No valid sessions found in entry.')
         
         return sessions
-    
-class NoValidSessionsException(Exception):
-    """Entry contains no valid sessions.
-    """
-    pass
-
-class HashError(Exception):
-     """Object data not hashable.
-     """
-     pass

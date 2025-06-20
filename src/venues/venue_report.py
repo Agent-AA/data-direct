@@ -6,7 +6,8 @@ import misc.utils as utils
 import openpyxl
 import os
 from tqdm import tqdm
-from venues.records import HashError, NoValidSessionsException, VenueRecord
+from venues.records import VenueRecord
+from venues.errors import HashError, NoValidSessionsException
 
 def generate():
     # Display logotype intro
