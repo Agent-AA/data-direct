@@ -192,7 +192,7 @@ def generate():
     }
 
     print('Performing optimizations...')
-    sorted_by_rsvps = sorted(filtered_data, key=lambda venue: venue.average_rsvps, reverse=True)
+    sorted_by_rsvps = sorted(filtered_data, key=lambda venue: venue.latest_job.ror, reverse=True)
     sorted_data = sorted(sorted_by_rsvps, key=lambda venue: venue.around_time_last_year(start_date, end_date, prox_weeks=2), reverse=True)
 
     ui.print_success('Exclusions and optimizations complete.')
