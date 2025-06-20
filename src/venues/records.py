@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from dateutil.relativedelta import relativedelta
 import datetime
+import math
 
 class VenueRecord:
     """A unique venue and its associated job records.
@@ -32,14 +33,15 @@ class VenueRecord:
         return self.__hash__() == other.__hash__()
 
     @property
-    def average_rsvps(self) -> float:
-        """Average number of RSVPs for all jobs with this venue.
+    def average_rsvps(self) -> int:
+        """Average number of RSVPs for all jobs with this venue,
+        rounded up to the nearest whole number.
         """
         if len(self.job_records) == 0:
             return 0.0
         
         total_rsvps = sum(job.rvsps for job in self.job_records)
-        return total_rsvps / len(self.job_records)
+        return  math.ceil(total_rsvps / len(self.job_records))
 
     @property
     def latest_job(self) -> 'JobRecord':
