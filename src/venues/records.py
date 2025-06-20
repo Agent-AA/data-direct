@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from dateutil.relativedelta import relativedelta
 import datetime
 import math
+import re
 
 class VenueRecord:
     """A unique venue and its associated job records.
@@ -18,16 +19,17 @@ class VenueRecord:
         self.job_records: set['JobRecord'] = set()
     
     def __hash__(self):
-        return hash((
-            self.market,
-            self.loc_num,
-            self.zone,
-            self.restaurant,
-            self.street,
-            self.city,
-            self.state,
-            self.zip
-        ))
+        # Hashing is done only with zone and street
+        # number so that if some data is not formatted
+        # in the same way, that's okay.
+        try:
+            return hash((
+                self.zone,
+                re.findall(r'[0-9]+', self.street)[0]
+            ))
+        except IndexError as e:
+            raise HashError(f"The address '{self.street}' contains no number to use for hashing.")
+
 
     def __eq__(self, other: 'VenueRecord') -> bool:
         return self.__hash__() == other.__hash__()
@@ -267,6 +269,11 @@ class SessionRecord:
         return sessions
     
 class NoValidSessionsException(Exception):
-    """Raised when no valid sessions are found in an entry.
+    """Entry contains no valid sessions.
     """
     pass
+
+class HashError(Exception):
+     """Object data not hashable.
+     """
+     pass

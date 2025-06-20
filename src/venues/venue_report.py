@@ -6,7 +6,7 @@ import misc.utils as utils
 import openpyxl
 import os
 from tqdm import tqdm
-from venues.records import NoValidSessionsException, VenueRecord
+from venues.records import HashError, NoValidSessionsException, VenueRecord
 
 def generate():
     # Display logotype intro
@@ -123,6 +123,9 @@ def generate():
         except (TypeError, ValueError):
             #if entry['Job#'] is not None:
             #    tqdm.write(ui.warning(f'Job {entry['Job#']} is invalidly formatted. Skipping this job.'))
+            pass
+
+        except (HashError):
             pass
 
         #except BaseException:
