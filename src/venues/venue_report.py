@@ -15,27 +15,7 @@ def generate():
     ui.prompt_user('\nThis program will now prompt you to select an Excel (.xlsx) file containing venue data. Press any key to continue.')
     ui.pause()
 
-    # Prompt for excel file
-    file_path = ui.promptFile((('Excel Spreadsheet', ('*.xlsx')),('All files', '*.*')))
-    #file_path = 'C:\\Users\\alexc\\Documents\\GitHub\\addirectai\\test\\test_input.xlsx'
-
-    # Validate file path
-    if file_path == '':
-        ui.print_error('No file was selected.')
-        ui.pause()
-        ui.exit()
-
-    # ----- BEGIN LOADING FILE -----
-    try:
-        # Read file with openpyxl
-        print('Loading Excel file...')
-        workboox = openpyxl.load_workbook(file_path, data_only=True)
-        sheet = workboox.active
-        headers = [cell.value for cell in sheet[1]]
-
-        # Validate headers
-        print('Validating file headers...')
-        expected_headers = [
+    headers = [
             'Job#', 'User', 'MKT', 'LOC#', 'Week', 'Zone', 'Restaurant',
             'St Address', 'City', 'ST', 'ZIP', 'Mail Piece', 'Month', 'Year',
             '# Sessions', 'Qty', 'RSVPs', 'RMI',
@@ -47,20 +27,12 @@ def generate():
             'Dinner Day 2', 'Dinner 2 Date', 'Dinner 2 Time',
             'Dinner Day 3', 'Dinner 3 Date', 'Dinner 3 Time',
             ]
-        
-        missing_headers = [exp_hdr for exp_hdr in expected_headers if exp_hdr not in headers]
-        # If there are missing headers
-        if len(missing_headers) > 0:
-            missing_headers_msg = 'The selected file is missing the following expected columns:'
-            for header in missing_headers:
-                missing_headers_msg += f'\n{header}'
-            ui.print_error(missing_headers_msg)
-            ui.pause()
-            ui.exit()
-    except BaseException as e:
-        ui.print_error(f'An error occured while reading the file. This is likely due to invalid file format. See more details below:\n{e}')
-        ui.pause()
-        ui.exit()
+
+    # Prompt for excel file
+    file_path = _get_file_path(test=True)
+
+    # ----- BEGIN LOADING FILE -----
+    raw_data_sheet = _load_excel(file_path, headers)
     
     # Query for historical data range
     print('Please enter the historical cutoff date for these data (default is 16 months prior to today).')
@@ -81,7 +53,7 @@ def generate():
     venue_records: set[VenueRecord] = set()
     # Load data into structures
     # Iterate through each entry
-    for entry in tqdm(sheet.iter_rows(min_row=2, values_only=True), total=sheet.max_row - 1):
+    for entry in tqdm(raw_data_sheet.iter_rows(min_row=2, values_only=True), total=raw_data_sheet.max_row - 1):
         # If entry contains a date before cutoff date, don't evaluate
         outdated = False
         for val in entry:
@@ -201,8 +173,8 @@ def generate():
     ui.prompt_user('\nThis program will now prompt you to select an ouput directory. Press any key to continue.')
     ui.pause()
     
-    selected_dir = ui.promptDirectory()
-    #selected_dir = 'C:\\Users\\alexc\\Documents\\GitHub\\addirectai\\test'
+    #selected_dir = ui.promptDirectory()
+    selected_dir = 'C:\\Users\\alexc\\Documents\\GitHub\\addirectai\\test'
 
     if selected_dir == '':
         ui.print_warning('No directory selected. Terminating program.')
@@ -255,3 +227,59 @@ def generate():
     ui.print_success(f"Report(s) have been saved. You can safely close the program.")
     ui.pause()
     ui.exit()
+
+
+
+# ===== internal helper functions ===== #
+
+
+
+def _get_file_path(test: bool=False) -> str:
+    """Query the user for a filepath and returns a string. Will cause a UI
+    error and exit if the user enters an empty string.
+    """
+    if test:
+        file_path = 'C:\\Users\\alexc\\Documents\\GitHub\\addirectai\\test\\test_input.xlsx'
+    else:
+        file_path = ui.promptFile((('Excel Spreadsheet', ('*.xlsx')),('All files', '*.*')))
+
+    # Validate file path
+    if file_path == '':
+        ui.print_error('No file was selected.')
+        ui.pause()
+        ui.exit()
+    
+    return file_path
+
+
+def _load_excel(excel_file_path: str, expected_headers: list[str]) -> list:
+    """Attempt to load an excel spreadsheet and return a list which
+    can be iterated over. Will cause a UI error if an exception occurs or
+    the file is missing necessary file headers, which are hardcoded in this
+    class.
+    """
+    try:
+        # Read file with openpyxl
+        print('Loading Excel file...')
+        workbook = openpyxl.load_workbook(excel_file_path, data_only=True)
+        sheet = workbook.active
+        headers = [cell.value for cell in sheet[1]]
+        
+        missing_headers = [exp_hdr for exp_hdr in expected_headers if exp_hdr not in headers]
+        # If there are missing headers
+        if len(missing_headers) > 0:
+            missing_headers_msg = 'The selected file is missing the following expected columns:'
+            for header in missing_headers:
+                missing_headers_msg += f'\n{header}'
+            ui.print_error(missing_headers_msg)
+            ui.pause()
+            ui.exit()
+        else:
+            ui.print_success('All expected headers are present.')
+
+    except BaseException as e:
+        ui.print_error(f'An error occured while reading the file. This is likely due to invalid file format.')
+        ui.pause()
+        ui.exit()
+    
+    return sheet

@@ -59,18 +59,18 @@ def showCursor():
     sys.stdout.write('\033[?25h')
     sys.stdout.flush()
 
-def clear():
+def clear(version: str):
     """
     Clear terminal and display logotype."""
     os.system('cls' if os.name == 'nt' else 'clear')
-    print(""" _____        _        _____  _               _   
+    print(f""" _____        _        _____  _               _   
 |  __ \\      | |      |  __ \\(_)             | |  
 | |  | | __ _| |_ __ _| |  | |_ _ __ ___  ___| |_ 
 | |  | |/ _` | __/ _` | |  | | | '__/ _ \\/ __| __|
 | |__| | (_| | || (_| | |__| | | | |  __/ (__| |_ 
 |_____/ \\__,_|\\__\\__,_|_____/|_|_|  \\___|\\___|\\__|
 
-DataDirect copyright (c) AdDirect Incorporated 2025. Version 1.0.0
+DataDirect copyright (c) AdDirect Incorporated 2025. Version {version}
 ==================================================================""")
 
 def wait(s: int):
