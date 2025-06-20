@@ -48,6 +48,24 @@ class VenueRecord:
         return  math.ceil(total_rsvps / len(self.job_records))
 
     @property
+    def average_ror(self) -> float:
+        """Total number of RSVPs and RMIs across all
+        jobs divided by total quantity across all jobs,
+        and multiplied by 100 (to express as a percent).
+        """
+        total_rsvps_rmis = 0
+        total_quantity = 0
+
+        for job in self.job_records:
+            total_rsvps_rmis += job.rvsps + job.rmi
+            total_quantity += job.quantity
+        
+        if total_quantity == 0:
+            return 0
+        
+        return 100 * total_rsvps_rmis / total_quantity
+
+    @property
     def latest_job(self) -> 'JobRecord':
         latest_job: JobRecord = None
         
@@ -102,7 +120,9 @@ class VenueRecord:
             self.latest_job.quantity,
             self.latest_job.rvsps,
             self.latest_job.rmi,
-            self.average_rsvps
+            self.latest_job.ror,
+            self.average_rsvps,
+            self.average_ror
         )
     
     def within(self, weeks: int, ref_date: datetime) -> bool:
@@ -203,6 +223,17 @@ class JobRecord:
                 dinners += 1
         
         return f'{lunches} Lunch {dinners} Dinner'
+    
+    @property
+    def ror (self) -> float:
+        """The Rate of Return. This is the total number of RSVPs
+        and RMIs (request for more information) divided by job quantity and
+        multiplied by 100 (to express as a percent).
+        """
+        if self.quantity == 0:
+            return 0
+        
+        return 100 * (self.rvsps + self.rmi) / self.quantity
     
     @staticmethod
     def from_entry(entry: dict[str, str]) -> 'JobRecord':

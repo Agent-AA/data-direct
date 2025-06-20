@@ -235,7 +235,8 @@ def generate():
             'Job#', 'User', 'MKT', 'LOC#', 'Week', 'Zone',
             'Restaurant', 'St Address', 'City', 'ST', 'ZIP',
             'Mail Piece', 'Month', 'Year', '# Sessions',
-            'Session Type', 'Qty', 'RSVPs', 'RMI', 'Average RSVPs']
+            'Session Type', 'Qty', 'RSVPs', 'RMI', 'ROR (%)', 
+            'Average RSVPs', 'Average ROR (%)']
 
         ws.append(headers)
 
