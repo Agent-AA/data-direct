@@ -72,6 +72,9 @@ class VenueRecord:
         
         return new_venue
     
+    # IMPORTANT the header order MUST match
+    # the order of data in to_entry()'s returned tuple.
+    # there is no mechanism checking if they match.
     def to_entry(self) -> tuple[str]:
         """Returns a spreadsheet-ready representation of this venue.
         """
@@ -94,8 +97,8 @@ class VenueRecord:
             self.latest_job.session_type,
             self.latest_job.quantity,
             self.latest_job.rvsps,
-            self.average_rsvps,
-            self.latest_job.rmi
+            self.latest_job.rmi,
+            self.average_rsvps
         )
     
     def within(self, weeks: int, ref_date: datetime) -> bool:

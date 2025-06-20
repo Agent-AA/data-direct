@@ -224,11 +224,14 @@ def generate():
         wb = openpyxl.Workbook()
         ws = wb.active
 
+        # IMPORTANT if headers are changed, then the returned tuple
+        # from Venue.to_entry() must also be changed so that the header
+        # order matches the data order.
         headers = [
             'Job#', 'User', 'MKT', 'LOC#', 'Week', 'Zone',
             'Restaurant', 'St Address', 'City', 'ST', 'ZIP',
             'Mail Piece', 'Month', 'Year', '# Sessions',
-            'Session Type', 'Qty', 'RSVPs', 'Average RSVPs', 'RMI']
+            'Session Type', 'Qty', 'RSVPs', 'RMI', 'Average RSVPs']
 
         ws.append(headers)
 
