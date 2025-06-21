@@ -112,7 +112,7 @@ class VenueRecord:
             self.city,
             self.state,
             self.zip,
-            self.latest_job.mail_piece,
+            "Menu",  # Rod wants everything to say Menu
             self.latest_job.month,
             self.latest_job.year,
             self.latest_job.num_sessions,
