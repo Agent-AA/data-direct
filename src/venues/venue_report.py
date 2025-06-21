@@ -1,5 +1,6 @@
 from collections import defaultdict
 from datetime import datetime
+from typing import overload
 from dateutil.relativedelta import relativedelta
 import misc.ui as ui
 import misc.utils as utils
@@ -9,13 +10,7 @@ from tqdm import tqdm
 from venues.records import VenueRecord
 from venues.errors import HashError, NoValidSessionsException
 
-def generate():
-    # Display logotype intro
-    ui.hideCursor()
-    ui.prompt_user('\nThis program will now prompt you to select an Excel (.xlsx) file containing venue data. Press any key to continue.')
-    ui.pause()
-
-    headers = [
+expected_headers = [
             'Job#', 'User', 'MKT', 'LOC#', 'Week', 'Zone', 'Restaurant',
             'St Address', 'City', 'ST', 'ZIP', 'Mail Piece', 'Month', 'Year',
             '# Sessions', 'Qty', 'RSVPs', 'RMI',
@@ -25,89 +20,36 @@ def generate():
             'Lunch Day 3', 'Lunch 3 Date', 'Lunch 3 Time',
             'Dinner Day 1', 'Dinner 1 Date', 'Dinner 1 Time',
             'Dinner Day 2', 'Dinner 2 Date', 'Dinner 2 Time',
-            'Dinner Day 3', 'Dinner 3 Date', 'Dinner 3 Time',
-            ]
+            'Dinner Day 3', 'Dinner 3 Date', 'Dinner 3 Time']
 
-    # Prompt for excel file
-    file_path = _get_file_path(test=True)
+@overload
+def generate() -> None: ...
+@overload
+def generate(venue_records: set['VenueRecord']) -> None: ...
 
-    # ----- BEGIN LOADING FILE -----
-    raw_data_sheet = _load_excel(file_path, headers)
-    
-    # Query for historical data range
-    print('Please enter the historical cutoff date for these data (default is 16 months prior to today).')
-    ui.showCursor()
-    valid = False
-    cutoff_date = None
-    while not valid:
-        try:
-            cutoff_date = utils.parse_datetime(ui.query_user('Cutoff date (MM/DD/YY): ',
-                                                  (datetime.now() - relativedelta(months=16)).strftime('%m/%d/%y')))
-        except ValueError:
-            ui.print_error('The date entered is not valid. Please try again.')
-            continue
+def generate(venue_records: set['VenueRecord']=None):
+    if (venue_records == None):
+        # Display logotype intro
+        ui.hideCursor()
+        ui.prompt_user('\nThis program will now prompt you to select an Excel (.xlsx) file containing venue data. Press any key to continue.')
+        ui.pause()
 
-        valid = True
+        # Prompt for excel file
+        file_path = _get_file_path(test=True)
 
-    print('Extracting data. This may take a minute...')
-    venue_records: set[VenueRecord] = set()
-    # Load data into structures
-    # Iterate through each entry
-    for entry in tqdm(raw_data_sheet.iter_rows(min_row=2, values_only=True), total=raw_data_sheet.max_row - 1):
-        # If entry contains a date before cutoff date, don't evaluate
-        outdated = False
-        for val in entry:
-            try:
-                if val < cutoff_date:
-                    outdated = True
-                    break
-            except:
-                pass
-        if outdated:
-            continue
+        # Load file
+        raw_data_sheet = _load_excel(file_path)
+        
+        # Query for historical data range
+        print('Please enter the historical cutoff date for these data (default is 16 months prior to today).')
+        cutoff_date = ui.query_date(
+            'Cutoff date (MM/DD/YY): ',
+            default=datetime.now() - relativedelta(months=16))
+        
+        print('Extracting data. This may take a minute...')
+        venue_records = _extract_data(raw_data_sheet, cutoff_date)
+        ui.print_success('Extraction complete.')
 
-        # Convert tuple to dict so we can reference by key
-        entry = dict(zip(headers, entry))
-
-        # If no job id, then there's not really an entry here
-        if entry['Job#'] is None:
-            continue
-
-        # Create a new venue (or at least try to)
-        try:
-            new_venue = VenueRecord.from_entry(entry)
-            found = False
-            # And check if it matches an existing venue
-            for existing_venue in venue_records:
-                # If there is a match
-                if new_venue == existing_venue:
-                    # Add new job record to existing venue
-                    existing_venue.add_job_record(entry)  
-                    found = True
-
-            # If no matching venue found, add this one to the set
-            if not found:
-                venue_records.add(new_venue)
-
-        except NoValidSessionsException:
-            #tqdm.write(ui.warning(f'No valid sessions found for job {entry['Job#']}. Skipping this job.'))
-            pass
-
-        except (TypeError, ValueError):
-            #if entry['Job#'] is not None:
-            #    tqdm.write(ui.warning(f'Job {entry['Job#']} is invalidly formatted. Skipping this job.'))
-            pass
-
-        except (HashError):
-            pass
-
-        #except BaseException:
-        #    if entry['Job#'] is not None:
-        #        #ui.print_warning(f'Job {entry['Job#']} is invalidly formatted. Skipping job.')
-        #        # TODO - printing a warning is too verbose. Maybe do something else?
-        #        pass
-
-    ui.print_success('Extraction complete.')
 
     # ----- QUERY USER FOR PARAMETERS -----
     # Query scheduling dates
@@ -252,7 +194,7 @@ def _get_file_path(test: bool=False) -> str:
     return file_path
 
 
-def _load_excel(excel_file_path: str, expected_headers: list[str]) -> list:
+def _load_excel(excel_file_path: str) -> list:
     """Attempt to load an excel spreadsheet and return a list which
     can be iterated over. Will cause a UI error if an exception occurs or
     the file is missing necessary file headers, which are hardcoded in this
@@ -283,3 +225,68 @@ def _load_excel(excel_file_path: str, expected_headers: list[str]) -> list:
         ui.exit()
     
     return sheet
+
+
+def _extract_data(raw_data_sheet: list, cutoff_date: datetime) -> set['VenueRecord']:
+    """Accepts a data sheet like one from an openpyxl workbook and retrns
+    a set of VenueRecords. Will skip over malformed entries in the sheet
+    without raising any exceptions.
+    """
+    venue_records: set[VenueRecord] = set()
+    # Load data into structures
+    # Iterate through each entry
+    for entry in tqdm(raw_data_sheet.iter_rows(min_row=2, values_only=True), total=raw_data_sheet.max_row - 1):
+        # If entry contains a date before cutoff date, don't evaluate
+        outdated = False
+        for val in entry:
+            try:
+                if val < cutoff_date:
+                    outdated = True
+                    break
+            except:
+                pass
+        if outdated:
+            continue
+
+        # Convert tuple to dict so we can reference by key
+        entry = dict(zip(expected_headers, entry))
+
+        # If no job id, then there's not really an entry here
+        if entry['Job#'] is None:
+            continue
+
+        # Create a new venue (or at least try to)
+        try:
+            new_venue = VenueRecord.from_entry(entry)
+            found = False
+            # And check if it matches an existing venue
+            for existing_venue in venue_records:
+                # If there is a match
+                if new_venue == existing_venue:
+                    # Add new job record to existing venue
+                    existing_venue.add_job_record(entry)  
+                    found = True
+
+            # If no matching venue found, add this one to the set
+            if not found:
+                venue_records.add(new_venue)
+
+        except NoValidSessionsException:
+            #tqdm.write(ui.warning(f'No valid sessions found for job {entry['Job#']}. Skipping this job.'))
+            pass
+
+        except (TypeError, ValueError):
+            #if entry['Job#'] is not None:
+            #    tqdm.write(ui.warning(f'Job {entry['Job#']} is invalidly formatted. Skipping this job.'))
+            pass
+
+        except (HashError):
+            pass
+
+        #except BaseException:
+        #    if entry['Job#'] is not None:
+        #        #ui.print_warning(f'Job {entry['Job#']} is invalidly formatted. Skipping job.')
+        #        # TODO - printing a warning is too verbose. Maybe do something else?
+        #        pass
+
+    return venue_records
