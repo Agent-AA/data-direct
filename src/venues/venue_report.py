@@ -118,7 +118,7 @@ def generate(venue_records: set['VenueRecord']=None):
     try:
         os.makedirs(output_dir, exist_ok=False)
     except OSError:
-        ui.print_warning('WARNING: A folder already exists at the selected location and will be overwritten. Press N to abort.')
+        ui.print_warning('WARNING: A folder already exists at the selected location and will be overwritten. Press N to abort. Press any other key to continue.')
 
         if (ui.pause() == b'N'):
             print('Terminating report.')
@@ -167,7 +167,7 @@ def generate(venue_records: set['VenueRecord']=None):
 
         wb.save(file_path)
 
-    ui.print_success(f"Report(s) have been saved. Press any key to begin a new report or close the program.")
+    ui.print_success(f"Report(s) have been saved. Press any key to begin a new report, or close the program.")
     ui.pause()
     
     generate(venue_records)
