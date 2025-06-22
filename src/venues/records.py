@@ -81,18 +81,25 @@ class VenueRecord:
         """Create a new venue object from an entry dictionary.
         """
         new_venue = VenueRecord(
-            entry['MKT'],
+            VenueRecord.strip_field(entry['MKT']),
             int(entry['LOC#']),
-            entry['Zone'],
-            entry['Restaurant'],
-            entry['St Address'],
-            entry['City'],
-            entry['ST'],
+            VenueRecord.strip_field(entry['Zone']),
+            VenueRecord.strip_field(entry['Restaurant']),
+            VenueRecord.strip_field(entry['St Address']),
+            VenueRecord.strip_field(entry['City']),
+            VenueRecord.strip_field(entry['ST']),
             int(entry['ZIP']))
 
         new_venue.add_job_record(entry)
         
         return new_venue
+    
+    @staticmethod
+    def strip_field(field: str | None) -> str:
+        """Return a stripped `str` if field is not `None`,
+        else returns an empty `str`.
+        """
+        return field.strip() if field is not None else ''
     
     # IMPORTANT the header order MUST match
     # the order of data in to_entry()'s returned tuple.
