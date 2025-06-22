@@ -118,7 +118,7 @@ def generate(venue_records: set['VenueRecord']=None):
     try:
         os.makedirs(output_dir, exist_ok=False)
     except OSError:
-        ui.print_warning('WARNING: A folder already exists at the selected location and will be overwritten. Press N to abort. Press any other key to continue.')
+        ui.print_warning('WARNING: A venues report folder with the same name already exists at the selected location and will be overwritten. Press N to abort. Press any other key to continue.')
         keypress = ui.pause()
 
         if (keypress == b'n' or keypress == b'N'):
