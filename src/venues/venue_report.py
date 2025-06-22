@@ -28,7 +28,8 @@ def generate() -> None: ...
 def generate(venue_records: set['VenueRecord']) -> None: ...
 
 def generate(venue_records: set['VenueRecord']=None):
-    if (venue_records == None):
+    print('\n[Begin new report]')
+    if (venue_records is None):
         # Display logotype intro
         ui.hideCursor()
         ui.prompt_user('\nThis program will now prompt you to select an Excel (.xlsx) file containing venue data. Press any key to continue.')
@@ -58,12 +59,14 @@ def generate(venue_records: set['VenueRecord']=None):
     start_date = ui.query_date('Start date (MM/DD/YY): ')
     end_date = ui.query_date('End Date (MM/DD/YY): ')
 
+    # We can't have the start date be after the end date.
     while start_date > end_date:
         ui.print_error('Scheduling period start date cannot be after end date. Please try again.')
         start_date = ui.query_date('Start date (MM/DD/YY): ')
         end_date = ui.query_date('End Date (MM/DD/YY): ')
 
     
+    # A bunch of other queries
     print('\nFor default values on any of the following questions, continue without entering anything.')
     # Query saturation period
     saturation_period = int(ui.query_user('Zone Saturation Period (weeks): ', '16'))
@@ -85,18 +88,11 @@ def generate(venue_records: set['VenueRecord']=None):
 
     print('Executing set exclusions...')
     # We want to exclude all zones that have had an event within four months
-    saturated_zones = {
-        venue.zone for venue in venue_records 
-        if venue.within(weeks=saturation_period, ref_date=start_date)
-    }
+    filtered_data = _filter_data(venue_records, saturation_period, start_date, min_rsvps)
 
-    # Filter by saturated zones and minimum rsvps
-    filtered_data = {
-        venue for venue in venue_records
-        if (venue.zone not in saturated_zones
-            and venue.average_rsvps >= min_rsvps)
-    }
-
+    # Rank venues by latest job ROR 
+    # and then categorize by whether there was a job
+    # around the same time last year
     print('Performing optimizations...')
     sorted_by_rsvps = sorted(filtered_data, key=lambda venue: venue.latest_job.ror, reverse=True)
     sorted_data = sorted(sorted_by_rsvps, key=lambda venue: venue.around_time_last_year(start_date, end_date, prox_weeks=2), reverse=True)
@@ -111,13 +107,25 @@ def generate(venue_records: set['VenueRecord']=None):
     selected_dir = 'C:\\Users\\alexc\\Documents\\GitHub\\addirectai\\test'
 
     if selected_dir == '':
-        ui.print_warning('No directory selected. Terminating program.')
-        ui.pause()
-        ui.exit()
+        ui.print_error('No directory selected. Terminating report.')
+        generate(venue_records)
+        return
 
     print('Creating output directory...')
     output_dir = selected_dir + f'\\VEN_REPORT_{start_date.strftime("%m_%d_%y")}-{end_date.strftime("%m_%d_%y")}'
-    os.makedirs(output_dir, exist_ok=True)
+
+    # Check if directory already exists, and if so warn user. 
+    try:
+        os.makedirs(output_dir, exist_ok=False)
+    except OSError:
+        ui.print_warning('WARNING: A folder already exists at the selected location and will be overwritten. Press N to abort.')
+
+        if (ui.pause() == b'N'):
+            print('Terminating report.')
+            generate(venue_records)
+            return
+        
+        os.makedirs(output_dir, exist_ok=True)
 
     print('Classifying records by market...')
     venues_by_market = defaultdict(list[VenueRecord])
@@ -156,13 +164,14 @@ def generate(venue_records: set['VenueRecord']=None):
                 i += 1
 
         file_path = os.path.join(output_dir, f'{market}_{start_date.strftime("%m_%d_%y")}-{end_date.strftime("%m_%d_%y")}.xlsx')
+
         wb.save(file_path)
 
     ui.print_success(f"Report(s) have been saved. Press any key to begin a new report or close the program.")
     ui.pause()
     
-    print('\n[Begin new report]')
     generate(venue_records)
+    return
 
 
 
@@ -284,3 +293,23 @@ def _extract_data(headers: list[str], raw_data_sheet: list, cutoff_date: datetim
         #        pass
 
     return venue_records
+
+
+def _filter_data(venue_records: set[VenueRecord], saturation_period: int, start_date: datetime, min_rsvps: int):
+    """Filters out undesirable venues. The current criteria is based on minimum
+    number of RSVPs and whether a venue's zone has had a seminar within the `saturation_period` (weeks).
+    """
+    
+    saturated_zones = {
+        venue.zone for venue in venue_records 
+        if venue.within(weeks=saturation_period, ref_date=start_date)
+    }
+
+    # Filter by saturated zones and minimum rsvps
+    filtered_data = {
+        venue for venue in venue_records
+        if (venue.zone not in saturated_zones
+            and venue.average_rsvps >= min_rsvps)
+    }
+
+    return filtered_data

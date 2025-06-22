@@ -100,7 +100,7 @@ def pause(msg: str=None):
     if msg is not None:
         print(msg)
 
-    msvcrt.getch()
+    return msvcrt.getch()
 
 def exit():
     """Ends the program.
