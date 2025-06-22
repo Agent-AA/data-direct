@@ -36,7 +36,7 @@ def generate(venue_records: set['VenueRecord']=None):
         ui.pause()
 
         # Prompt for excel file
-        file_path = _get_file_path(test=True)
+        file_path = _get_file_path()
 
         # Load file
         headers, raw_data_sheet = _load_excel(file_path)
@@ -103,8 +103,8 @@ def generate(venue_records: set['VenueRecord']=None):
     ui.prompt_user('\nThis program will now prompt you to select an ouput directory. Press any key to continue.')
     ui.pause()
     
-    #selected_dir = ui.promptDirectory()
-    selected_dir = 'C:\\Users\\alexc\\Documents\\GitHub\\addirectai\\test'
+    selected_dir = ui.promptDirectory()
+    #selected_dir = 'C:\\Users\\alexc\\Documents\\GitHub\\addirectai\\test'
 
     if selected_dir == '':
         ui.print_error('No directory selected. Terminating report.')
@@ -119,8 +119,9 @@ def generate(venue_records: set['VenueRecord']=None):
         os.makedirs(output_dir, exist_ok=False)
     except OSError:
         ui.print_warning('WARNING: A folder already exists at the selected location and will be overwritten. Press N to abort. Press any other key to continue.')
+        keypress = ui.pause()
 
-        if (ui.pause() == b'N'):
+        if (keypress == b'n' or keypress == b'N'):
             print('Terminating report.')
             generate(venue_records)
             return
