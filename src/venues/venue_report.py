@@ -38,7 +38,7 @@ def generate(venue_records: set['VenueRecord']=None):
         file_path = _get_file_path(test=True)
 
         # Load file
-        raw_data_sheet = _load_excel(file_path)
+        headers, raw_data_sheet = _load_excel(file_path)
         
         # Query for historical data range
         print('Please enter the historical cutoff date for these data (default is 16 months prior to today).')
@@ -47,30 +47,22 @@ def generate(venue_records: set['VenueRecord']=None):
             default=datetime.now() - relativedelta(months=16))
         
         print('Extracting data. This may take a minute...')
-        venue_records = _extract_data(raw_data_sheet, cutoff_date)
+        venue_records = _extract_data(headers, raw_data_sheet, cutoff_date)
         ui.print_success('Extraction complete.')
 
 
     # ----- QUERY USER FOR PARAMETERS -----
     # Query scheduling dates
     print('\nPlease enter the scheduling period for this report. Scheduling period does not support default values.')
-    valid = False
-    start_date, end_date = (None, None)
-    while not valid:
-        try:
-            start_date = utils.parse_datetime(ui.query_user('Start date (MM/DD/YY): '))
-            end_date = utils.parse_datetime(ui.query_user('End date (MM/DD/YY): '))
-        except ValueError:
-            ui.print_error('The entered date is not valid. Please try again.')
-            continue
-
-        # Make sure start_date is before end_date
-        if start_date > end_date:
-            ui.print_error('Start date cannot be after end date. Please try again.')
-            continue
-
-        valid = True
     
+    start_date = ui.query_date('Start date (MM/DD/YY): ')
+    end_date = ui.query_date('End Date (MM/DD/YY): ')
+
+    while start_date > end_date:
+        ui.print_error('Scheduling period start date cannot be after end date. Please try again.')
+        start_date = ui.query_date('Start date (MM/DD/YY): ')
+        end_date = ui.query_date('End Date (MM/DD/YY): ')
+
     
     print('\nFor default values on any of the following questions, continue without entering anything.')
     # Query saturation period
@@ -166,9 +158,11 @@ def generate(venue_records: set['VenueRecord']=None):
         file_path = os.path.join(output_dir, f'{market}_{start_date.strftime("%m_%d_%y")}-{end_date.strftime("%m_%d_%y")}.xlsx')
         wb.save(file_path)
 
-    ui.print_success(f"Report(s) have been saved. You can safely close the program.")
+    ui.print_success(f"Report(s) have been saved. Press any key to begin a new report or close the program.")
     ui.pause()
-    ui.exit()
+    
+    print('\n[Begin new report]')
+    generate(venue_records)
 
 
 
@@ -224,10 +218,10 @@ def _load_excel(excel_file_path: str) -> list:
         ui.pause()
         ui.exit()
     
-    return sheet
+    return (headers, sheet)
 
 
-def _extract_data(raw_data_sheet: list, cutoff_date: datetime) -> set['VenueRecord']:
+def _extract_data(headers: list[str], raw_data_sheet: list, cutoff_date: datetime) -> set['VenueRecord']:
     """Accepts a data sheet like one from an openpyxl workbook and retrns
     a set of VenueRecords. Will skip over malformed entries in the sheet
     without raising any exceptions.
@@ -249,7 +243,7 @@ def _extract_data(raw_data_sheet: list, cutoff_date: datetime) -> set['VenueReco
             continue
 
         # Convert tuple to dict so we can reference by key
-        entry = dict(zip(expected_headers, entry))
+        entry = dict(zip(headers, entry))
 
         # If no job id, then there's not really an entry here
         if entry['Job#'] is None:
