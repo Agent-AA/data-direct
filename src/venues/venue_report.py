@@ -90,12 +90,28 @@ def generate(venue_records: set['VenueRecord']=None):
     # We want to exclude all zones that have had an event within four months
     filtered_data = _filter_data(venue_records, saturation_period, start_date, min_rsvps)
 
-    # Rank venues by latest job ROR 
-    # and then categorize by whether there was a job
-    # around the same time last year
+    # Split venues into those who had a job around the same time last year, and those that didn't
+    # sort the proximal venues by ROR
+    # sort the non-proximal venues first by oldest last job month
+    # and then by ROR
     print('Performing optimizations...')
-    sorted_by_rsvps = sorted(filtered_data, key=lambda venue: venue.latest_job.ror, reverse=True)
-    sorted_data = sorted(sorted_by_rsvps, key=lambda venue: venue.around_time_last_year(start_date, end_date, prox_weeks=2), reverse=True)
+    proximal_venues = {
+        venue for venue in filtered_data
+        if venue.around_time_last_year(start_date, end_date, prox_weeks=2)
+    }
+
+    proximal_venues = sorted(proximal_venues, key=lambda venue: venue.latest_job.ror, reverse=True)
+
+    nonproximal_venues = {
+        venue for venue in filtered_data
+        if not venue.around_time_last_year(start_date, end_date, prox_weeks=2)
+    }
+
+    nonproximal_venues = sorted(nonproximal_venues, key=lambda venue: venue.latest_job.ror, reverse=True)
+    nonproximal_venues = sorted(nonproximal_venues, key=lambda venue: venue.latest_job.month_date)
+
+    # Recombine so that proximal venues are on top.
+    sorted_data = proximal_venues + nonproximal_venues
 
     ui.print_success('Exclusions and optimizations complete.')
 

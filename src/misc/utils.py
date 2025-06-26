@@ -14,3 +14,29 @@ def parse_datetime(datetime_str: str) -> datetime.datetime:
         except ValueError:
             continue
     raise ValueError(f'Datetime string {datetime_str} is not in a valid format.')
+
+def parse_month_year(month: str, year: str) -> datetime.datetime:
+    """
+    Parses a month and year string into a datetime object representing the first day of that month.
+    Args:
+        month (str): Month as a string (e.g., '1', '01', 'Jan', 'January').
+        year (str): Year as a string (e.g., '2024', '24').
+    Returns:
+        datetime.datetime: Datetime object for the first day of the given month and year.
+    Raises:
+        ValueError: If the month or year cannot be parsed.
+    """
+    try:
+        # Try parsing month as integer
+        try:
+            month_int = int(month)
+        except ValueError:
+            # Try parsing month as name
+            month_int = datetime.datetime.strptime(month[:3], "%b").month
+        # Handle 2-digit years
+        year_int = int(year)
+        if year_int < 100:
+            year_int += 2000 if year_int < 70 else 1900
+        return datetime.datetime(year_int, month_int, 1)
+    except Exception as e:
+        raise ValueError(f"Invalid month/year: {month}/{year}") from e

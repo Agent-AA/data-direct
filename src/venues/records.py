@@ -4,6 +4,7 @@ import datetime
 import math
 import re
 
+from misc import utils
 from venues.errors import HashError, NoValidSessionsException
 
 class VenueRecord:
@@ -204,6 +205,10 @@ class JobRecord:
 
     def __eq__(self, other: 'JobRecord') -> bool:
         return self.__hash__() == other.__hash__()
+    
+    @property
+    def month_date(self) -> datetime:
+        return utils.parse_month_year(self.month, self.year)
     
     @property
     def end_date(self) -> datetime:
