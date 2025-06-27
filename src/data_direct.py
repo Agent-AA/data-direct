@@ -1,5 +1,6 @@
 __version__ = "1.2.1"
 
+
 import traceback
 import misc.ui as ui
 from venues import venue_report

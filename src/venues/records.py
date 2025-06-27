@@ -3,9 +3,9 @@ from dateutil.relativedelta import relativedelta
 import datetime
 import math
 import re
-
 from misc import utils
 from venues.errors import HashError, NoValidSessionsException
+
 
 class VenueRecord:
     """A unique venue and its associated job records.
@@ -32,7 +32,6 @@ class VenueRecord:
             ))
         except IndexError as e:
             raise HashError(f"The address '{self.street}' contains no number to use for hashing.")
-
 
     def __eq__(self, other: 'VenueRecord') -> bool:
         return self.__hash__() == other.__hash__()
@@ -141,6 +140,7 @@ class VenueRecord:
         if `SomeVenue` had a job within 16 weeks of today.
         """
         threshold_date = ref_date - relativedelta(weeks=weeks)
+
         for job in self.job_records:
             for session in job.sessions:
                 if session.datetime > threshold_date:
