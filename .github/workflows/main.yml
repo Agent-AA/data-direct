@@ -25,7 +25,7 @@ jobs:
 
       - name: Build executable with PyInstaller
         run: |
-          pyinstaller src/data-direct.py --onefile --distpath dist
+          pyinstaller src/data_direct.py --onefile --distpath dist
 
       - name: Download Inno Setup
         run: |
