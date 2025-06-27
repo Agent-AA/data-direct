@@ -4,6 +4,7 @@ import tkinter.filedialog
 from datetime import datetime
 from misc import utils, ui
 
+
 def print_error(msg: str):
     """Prints a message in bright red text to the terminal.
     """

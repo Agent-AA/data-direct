@@ -189,6 +189,7 @@ def _get_file_path(test: bool=False) -> str:
     else:
         file_path = ui.promptFile((('Excel Spreadsheet', ('*.xlsx')),('All files', '*.*')))
 
+
     # Validate file path
     if file_path == '':
         ui.print_error('No file was selected.')
@@ -210,6 +211,7 @@ def _load_excel(excel_file_path: str) -> list:
         workbook = openpyxl.load_workbook(excel_file_path, data_only=True)
         sheet = workbook.active
         headers = [cell.value for cell in sheet[1]]
+        
         
         missing_headers = [exp_hdr for exp_hdr in expected_headers if exp_hdr not in headers]
         # If there are missing headers
