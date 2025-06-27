@@ -3,7 +3,7 @@ run-name: Build Executable
 on: [push, workflow_dispatch]
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     steps:
       - name: Python Build for Windows(PyInstaller)
       # You may pin to the exact commit or the version.
