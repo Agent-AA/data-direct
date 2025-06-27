@@ -3,6 +3,7 @@ from dateutil.relativedelta import relativedelta
 import datetime
 import math
 import re
+from misc import utils
 from venues.errors import HashError, NoValidSessionsException
 
 
@@ -149,15 +150,15 @@ class VenueRecord:
     
     def around_time_last_year(self, start_date: datetime, end_date: datetime, prox_weeks: int) -> bool:
         """Returns `True` if at least one session in a job took place
-        during the time between `start_date` and `end_date` or within `prox_weeks` weeks thereof.
+        during the time last year between `start_date` and `end_date` or within `prox_weeks` weeks thereof.
         """
         start_threshold = start_date - relativedelta(years=1) - relativedelta(weeks=prox_weeks)
         end_threshold = end_date - relativedelta(years=1) + relativedelta(weeks=prox_weeks)
 
         for job in self.job_records:
             for session in job.sessions:
-                if (session.datetime > start_threshold and
-                    session.datetime < end_threshold):
+                if (session.datetime >= start_threshold and
+                    session.datetime <= end_threshold):
                     return True
         
         return False
@@ -204,6 +205,10 @@ class JobRecord:
 
     def __eq__(self, other: 'JobRecord') -> bool:
         return self.__hash__() == other.__hash__()
+    
+    @property
+    def month_date(self) -> datetime:
+        return utils.parse_month_year(self.month, self.year)
     
     @property
     def end_date(self) -> datetime:
