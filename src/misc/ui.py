@@ -1,6 +1,9 @@
 import os, sys, msvcrt, time
 import tkinter
 import tkinter.filedialog
+from datetime import datetime
+from misc import utils, ui
+
 
 def print_error(msg: str):
     """Prints a message in bright red text to the terminal.
@@ -33,6 +36,19 @@ def query_user(msg: str, default: str='') -> str:
     
     return resp if resp != '' else default
      
+def query_date(msg: str, default: datetime=None) -> datetime:
+    ui.showCursor()
+    try:
+        resp = query_user(msg)
+        resp = utils.parse_datetime(resp)
+    except BaseException:
+        if resp == '' and default is not None:
+            return default
+        
+        ui.print_error("The date entered is not valid. Try again.")
+        return query_date(msg, default)
+        
+    return resp
 
 def promptFile(filetypes) -> str:
     """
@@ -59,18 +75,18 @@ def showCursor():
     sys.stdout.write('\033[?25h')
     sys.stdout.flush()
 
-def clear():
+def clear(version: str):
     """
     Clear terminal and display logotype."""
     os.system('cls' if os.name == 'nt' else 'clear')
-    print(""" _____        _        _____  _               _   
+    print(f""" _____        _        _____  _               _   
 |  __ \\      | |      |  __ \\(_)             | |  
 | |  | | __ _| |_ __ _| |  | |_ _ __ ___  ___| |_ 
 | |  | |/ _` | __/ _` | |  | | | '__/ _ \\/ __| __|
 | |__| | (_| | || (_| | |__| | | | |  __/ (__| |_ 
 |_____/ \\__,_|\\__\\__,_|_____/|_|_|  \\___|\\___|\\__|
 
-DataDirect copyright (c) AdDirect Incorporated 2025. Version 1.0.0
+DataDirect copyright (c) AdDirect Incorporated 2025. Version {version}
 ==================================================================""")
 
 def wait(s: int):
@@ -78,11 +94,14 @@ def wait(s: int):
     """
     time.sleep(s)
 
-def pause():
+def pause(msg: str=None):
     """
     Wait for the user to press a key before executing rest of code.
     Print a string while paused with text."""
-    msvcrt.getch()
+    if msg is not None:
+        print(msg)
+
+    return msvcrt.getch()
 
 def exit():
     """Ends the program.

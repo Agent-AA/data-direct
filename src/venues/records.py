@@ -1,6 +1,10 @@
 from dataclasses import dataclass
 from dateutil.relativedelta import relativedelta
 import datetime
+import math
+import re
+from venues.errors import HashError, NoValidSessionsException
+
 
 class VenueRecord:
     """A unique venue and its associated job records.
@@ -17,29 +21,48 @@ class VenueRecord:
         self.job_records: set['JobRecord'] = set()
     
     def __hash__(self):
-        return hash((
-            self.market,
-            self.loc_num,
-            self.zone,
-            self.restaurant,
-            self.street,
-            self.city,
-            self.state,
-            self.zip
-        ))
+        # Hashing is done only with zone and street
+        # number so that if some data is not formatted
+        # in the same way, that's okay.
+        try:
+            return hash((
+                self.zone,
+                re.findall(r'[0-9]+', self.street)[0]
+            ))
+        except IndexError as e:
+            raise HashError(f"The address '{self.street}' contains no number to use for hashing.")
 
     def __eq__(self, other: 'VenueRecord') -> bool:
         return self.__hash__() == other.__hash__()
 
     @property
-    def average_rsvps(self) -> float:
-        """Average number of RSVPs for all jobs with this venue.
+    def average_rsvps(self) -> int:
+        """Average number of RSVPs for all jobs with this venue,
+        rounded up to the nearest whole number.
         """
         if len(self.job_records) == 0:
             return 0.0
         
         total_rsvps = sum(job.rvsps for job in self.job_records)
-        return total_rsvps / len(self.job_records)
+        return  math.ceil(total_rsvps / len(self.job_records))
+
+    @property
+    def average_ror(self) -> float:
+        """Total number of RSVPs and RMIs across all
+        jobs divided by total quantity across all jobs,
+        and multiplied by 100 (to express as a percent).
+        """
+        total_rsvps_rmis = 0
+        total_quantity = 0
+
+        for job in self.job_records:
+            total_rsvps_rmis += job.rvsps + job.rmi
+            total_quantity += job.quantity
+        
+        if total_quantity == 0:
+            return 0
+        
+        return 100 * total_rsvps_rmis / total_quantity
 
     @property
     def latest_job(self) -> 'JobRecord':
@@ -57,19 +80,29 @@ class VenueRecord:
         """Create a new venue object from an entry dictionary.
         """
         new_venue = VenueRecord(
-            entry['MKT'],
+            VenueRecord.strip_field(entry['MKT']),
             int(entry['LOC#']),
-            entry['Zone'],
-            entry['Restaurant'],
-            entry['St Address'],
-            entry['City'],
-            entry['ST'],
+            VenueRecord.strip_field(entry['Zone']),
+            VenueRecord.strip_field(entry['Restaurant']),
+            VenueRecord.strip_field(entry['St Address']),
+            VenueRecord.strip_field(entry['City']),
+            VenueRecord.strip_field(entry['ST']),
             int(entry['ZIP']))
 
         new_venue.add_job_record(entry)
         
         return new_venue
     
+    @staticmethod
+    def strip_field(field: str | None) -> str:
+        """Return a stripped `str` if field is not `None`,
+        else returns an empty `str`.
+        """
+        return field.strip() if field is not None else ''
+    
+    # IMPORTANT the header order MUST match
+    # the order of data in to_entry()'s returned tuple.
+    # there is no mechanism checking if they match.
     def to_entry(self) -> tuple[str]:
         """Returns a spreadsheet-ready representation of this venue.
         """
@@ -85,22 +118,28 @@ class VenueRecord:
             self.city,
             self.state,
             self.zip,
-            self.latest_job.mail_piece,
+            "Menu",  # Rod wants everything to say Menu
             self.latest_job.month,
             self.latest_job.year,
             self.latest_job.num_sessions,
             self.latest_job.session_type,
             self.latest_job.quantity,
             self.latest_job.rvsps,
+            self.latest_job.rmi,
+            self.latest_job.ror,
             self.average_rsvps,
-            self.latest_job.rmi
+            self.average_ror
         )
     
-    def within_four_months(self, ref_date: datetime) -> bool:
+    def within(self, weeks: int, ref_date: datetime) -> bool:
         """Returns `True` if at least one session in a job took
-        place within four months of `ref_date`.
+        place within a certain number of weeks from `ref_date`.
+
+        E.g., `SomeVenue.within(16, datetime.now())` would return `True`
+        if `SomeVenue` had a job within 16 weeks of today.
         """
-        threshold_date = ref_date - relativedelta(months=4)
+        threshold_date = ref_date - relativedelta(weeks=weeks)
+
         for job in self.job_records:
             for session in job.sessions:
                 if session.datetime > threshold_date:
@@ -192,6 +231,17 @@ class JobRecord:
         
         return f'{lunches} Lunch {dinners} Dinner'
     
+    @property
+    def ror (self) -> float:
+        """The Rate of Return. This is the total number of RSVPs
+        and RMIs (request for more information) divided by job quantity and
+        multiplied by 100 (to express as a percent).
+        """
+        if self.quantity == 0:
+            return 0
+        
+        return 100 * (self.rvsps + self.rmi) / self.quantity
+    
     @staticmethod
     def from_entry(entry: dict[str, str]) -> 'JobRecord':
         """Create a job record from an entry dictionary.
@@ -257,8 +307,3 @@ class SessionRecord:
             raise NoValidSessionsException('No valid sessions found in entry.')
         
         return sessions
-    
-class NoValidSessionsException(Exception):
-    """Raised when no valid sessions are found in an entry.
-    """
-    pass

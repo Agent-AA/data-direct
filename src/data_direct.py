@@ -1,10 +1,11 @@
-__version__ = "1.0.0"
+__version__ = "1.1.0"
+
 
 import traceback
 import misc.ui as ui
 from venues import venue_report
 
-ui.clear()
+ui.clear(__version__)
 print('[Begin Program]')
 
 try:
