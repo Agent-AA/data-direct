@@ -63,7 +63,7 @@ class VenueRecord:
         if total_quantity == 0:
             return 0
         
-        return 100 * total_rsvps_rmis / total_quantity
+        return round(100 * total_rsvps_rmis / total_quantity, 3)
 
     @property
     def latest_job(self) -> 'JobRecord':
@@ -245,7 +245,7 @@ class JobRecord:
         if self.quantity == 0:
             return 0
         
-        return 100 * (self.rvsps + self.rmi) / self.quantity
+        return round(100 * (self.rvsps + self.rmi) / self.quantity, 3)
     
     @staticmethod
     def from_entry(entry: dict[str, str]) -> 'JobRecord':
