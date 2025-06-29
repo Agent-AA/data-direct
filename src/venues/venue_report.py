@@ -328,7 +328,7 @@ def _filter_data(venue_records: set[VenueRecord], saturation_period: int, start_
     filtered_data = {
         venue for venue in venue_records
         if (venue.zone not in saturated_zones
-            and venue.average_rsvps >= min_rsvps)
+            and venue.latest_job.rvsps >= min_rsvps)
     }
 
     return filtered_data
