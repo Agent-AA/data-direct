@@ -70,6 +70,8 @@ def generate(venue_records: set['VenueRecord']=None):
     print('\nFor default values on any of the following questions, continue without entering anything.')
     # Query saturation period
     saturation_period = int(ui.query_user('Zone Saturation Period (weeks): ', '16'))
+    # Query for the "around the same time period"
+    prox_weeks = int(ui.query_user('Scheduling Period Lookback Margin (weeks): ', '2'))
     # Query minimum RSVPs
     min_rsvps = int(ui.query_user('Minimum RSVPs: ', '16'))
     # Query venue cap
@@ -78,13 +80,9 @@ def generate(venue_records: set['VenueRecord']=None):
     print('\nFor specific markets, use market codes separated by spaces (e.g., "HOU PDX...")')
     markets = ui.query_user('Specific Markets: ').split(' ')
 
-    # SORT DATA
     # Exclude venues...
-    # 1. Whose average RSVPs do not meet min_rsvps, and
+    # 1. Whose last RSVPs do not meet min_rsvps, and
     # 2. Who are in a zone which has had a job within the last four months
-    #
-    # Sort venues...
-    # If venue had a session within two weeks last year of scheduling period 
 
     print('Executing set exclusions...')
     # We want to exclude all zones that have had an event within four months
@@ -97,7 +95,7 @@ def generate(venue_records: set['VenueRecord']=None):
     print('Performing optimizations...')
     proximal_venues = {
         venue for venue in filtered_data
-        if venue.around_time_last_year(start_date, end_date, prox_weeks=2)
+        if venue.around_time_last_year(start_date, end_date, prox_weeks)
     }
 
     proximal_venues = sorted(proximal_venues, key=lambda venue: venue.latest_job.ror, reverse=True)
