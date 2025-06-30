@@ -102,7 +102,7 @@ def generate(venue_records: set['VenueRecord']=None):
 
     nonproximal_venues = {
         venue for venue in filtered_data
-        if not venue.around_time_last_year(start_date, end_date, prox_weeks=2)
+        if not venue.around_time_last_year(start_date, end_date, prox_weeks)
     }
 
     nonproximal_venues = sorted(nonproximal_venues, key=lambda venue: venue.latest_job.ror, reverse=True)
@@ -164,9 +164,9 @@ def generate(venue_records: set['VenueRecord']=None):
         headers = [
             'Job#', 'User', 'MKT', 'LOC#', 'Week', 'Zone',
             'Restaurant', 'St Address', 'City', 'ST', 'ZIP',
-            'Mail Piece', 'Month', 'Year', '# Sessions',
-            'Session Type', 'Qty', 'RSVPs', 'RMI', 'ROR (%)', 
-            'Average RSVPs', 'Average ROR (%)']
+            'Mail Piece', 'Qty', 'Venue/Last', '# Sessions', 
+            'Session Type', 'RSVPs', 'RMI', 'ROR%', 'Venue/Qualifier', 
+            'RSVPs', 'Venue use 12 months', 'Average ROR%']
 
         ws.append(headers)
 
@@ -175,7 +175,7 @@ def generate(venue_records: set['VenueRecord']=None):
 
         for venue in venues:
             if i < num_venues:
-                row = venue.to_entry()
+                row = venue.to_entry(start_date, end_date, prox_weeks)
                 ws.append(row)
                 i += 1
 
@@ -319,7 +319,7 @@ def _filter_data(venue_records: set[VenueRecord], saturation_period: int, start_
     
     saturated_zones = {
         venue.zone for venue in venue_records 
-        if venue.within(weeks=saturation_period, ref_date=start_date)
+        if venue.jobs_within(relativedelta(weeks=saturation_period), start_date)
     }
 
     # Filter by saturated zones and minimum rsvps
