@@ -9,6 +9,8 @@ import os
 from tqdm import tqdm
 from venues.records import VenueRecord
 from venues.errors import HashError, NoValidSessionsException
+from openpyxl.styles import Border, Side, PatternFill, Alignment
+from openpyxl.styles import Font
 
 expected_headers = [
             'Job#', 'User', 'MKT', 'LOC#', 'Week', 'Zone', 'Restaurant',
@@ -36,7 +38,7 @@ def generate(venue_records: set['VenueRecord']=None):
         ui.pause()
 
         # Prompt for excel file
-        file_path = _get_file_path()
+        file_path = _get_file_path(test=True)
 
         # Load file
         headers, raw_data_sheet = _load_excel(file_path)
@@ -118,8 +120,8 @@ def generate(venue_records: set['VenueRecord']=None):
     ui.prompt_user('\nThis program will now prompt you to select an ouput directory. Press any key to continue.')
     ui.pause()
     
-    selected_dir = ui.promptDirectory()
-    #selected_dir = 'C:\\Users\\alexc\\Documents\\GitHub\\addirectai\\test'
+    #selected_dir = ui.promptDirectory()
+    selected_dir = 'C:\\Users\\alexc\\Documents\\GitHub\\addirectai\\test'
 
     if selected_dir == '':
         ui.print_error('No directory selected. Terminating report.')
@@ -178,6 +180,8 @@ def generate(venue_records: set['VenueRecord']=None):
                 row = venue.to_entry(start_date, end_date, prox_weeks)
                 ws.append(row)
                 i += 1
+
+        _style_workbook(wb)
 
         file_path = os.path.join(output_dir, f'{market}_{start_date.strftime("%m_%d_%y")}-{end_date.strftime("%m_%d_%y")}.xlsx')
 
@@ -330,3 +334,39 @@ def _filter_data(venue_records: set[VenueRecord], saturation_period: int, start_
     }
 
     return filtered_data
+
+
+def _style_workbook(wb: openpyxl.Workbook):
+    """Add styles to the workbook.
+    """
+
+    # Make headers bold and pinned (freeze top row)
+    for ws in wb.worksheets:
+        # Bold headers
+        for cell in ws[1]:
+            cell.font = Font(bold=True)
+        # Freeze top row
+        ws.freeze_panes = ws['A2']
+
+    # Left justify, pad, and border cells
+    left_alignment = Alignment(horizontal="left", vertical="center", indent=0, wrap_text=True)
+    thin = Side(border_style="thin", color="000000")
+    border = Border(left=thin, right=thin, top=thin, bottom=thin)
+
+    for ws in wb.worksheets:
+        col_maxlen = {}
+        for row in ws.iter_rows():
+            for idx, cell in enumerate(row, start=1):
+
+                # Center and pad
+                cell.alignment = left_alignment
+                # Add black border
+                cell.border = border
+                # Track max length for column width
+                cell_len = len(str(cell.value)) if cell.value is not None else 0
+                col_maxlen[idx] = max(col_maxlen.get(idx, 0), cell_len)
+
+        # Set column widths
+        for idx, maxlen in col_maxlen.items():
+            col_letter = openpyxl.utils.get_column_letter(idx)
+            ws.column_dimensions[col_letter].width = maxlen + 4
