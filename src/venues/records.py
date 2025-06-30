@@ -132,7 +132,7 @@ class VenueRecord:
             "Menu",  # Rod wants everything to say Menu
 
             self.latest_job.quantity,
-            self.latest_job.month_date.strftime("%m/%d/%Y"),
+            self.latest_job.sessions[-1].datetime.strftime("%m/%d/%Y"),
             self.latest_job.num_sessions,
             self.latest_job.session_type,
             self.latest_job.rvsps,
@@ -194,7 +194,7 @@ class JobRecord:
     month: str
     year: int
     num_sessions: int
-    sessions: set['SessionRecord']
+    sessions: list['SessionRecord']
     quantity: int
     rvsps: int
     rmi: int
@@ -292,10 +292,10 @@ class SessionRecord:
                 self.datetime == other.datetime)
     
     @staticmethod
-    def from_entry(entry: dict[str, str]) -> set['SessionRecord']:
+    def from_entry(entry: dict[str, str]) -> list['SessionRecord']:
         """Create a set of session records from an entry dictionary.
         """
-        sessions: set['SessionRecord'] = set()
+        sessions: list['SessionRecord'] = []
 
         for day in (1, 2, 3):
             for meal_type in ('Lunch', 'Dinner'):
@@ -316,7 +316,7 @@ class SessionRecord:
                     entry[day_of_week_key],
                     date_and_time)
                     
-                sessions.add(new_session)
+                sessions.append(new_session)
         
         if len(sessions) == 0:
             raise NoValidSessionsException('No valid sessions found in entry.')

@@ -35,6 +35,20 @@ def query_user(msg: str, default: str='') -> str:
     resp = input(f"\033[96m{msg}\033[39m")
     
     return resp if resp != '' else default
+
+def query_num(msg: str, default: int=None) -> int:
+    ui.showCursor()
+    try:
+        resp = query_user(msg, str(default))
+        resp = int(resp)
+    except:
+        if resp == '' and default is not None:
+            return default
+    
+        ui.print_error(f"'{resp}' is not a valid number. Try again.")
+        return query_num(msg, default)
+
+    return resp
      
 def query_date(msg: str, default: datetime=None) -> datetime:
     ui.showCursor()

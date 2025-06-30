@@ -71,13 +71,13 @@ def generate(venue_records: set['VenueRecord']=None):
     # A bunch of other queries
     print('\nFor default values on any of the following questions, continue without entering anything.')
     # Query saturation period
-    saturation_period = int(ui.query_user('Zone Saturation Period (weeks): ', '16'))
+    saturation_period = ui.query_num('Zone Saturation Period (weeks): ', 16)
     # Query for the "around the same time period"
-    prox_weeks = int(ui.query_user('Scheduling Period Lookback Margin (weeks): ', '2'))
+    prox_weeks = ui.query_num('Scheduling Period Lookback Margin (weeks): ', 2)
     # Query minimum RSVPs
-    min_rsvps = int(ui.query_user('Minimum RSVPs: ', '16'))
+    min_rsvps = ui.query_num('Minimum RSVPs: ', 16)
     # Query venue cap
-    num_venues = int(ui.query_user('Number of venues per market: ', '20'))
+    num_venues = ui.query_num('Number of venues per market: ', 20)
     # Query specific markets
     print('\nFor specific markets, use market codes separated by spaces (e.g., "HOU PDX...")')
     markets = ui.query_user('Specific Markets: ').split(' ')
@@ -135,15 +135,9 @@ def generate(venue_records: set['VenueRecord']=None):
     try:
         os.makedirs(output_dir, exist_ok=False)
     except OSError:
-        ui.print_warning('WARNING: A venues report folder with the same name already exists at the selected location and will be overwritten. Press N to abort. Press any other key to continue.')
-        keypress = ui.pause()
-
-        if (keypress == b'n' or keypress == b'N'):
-            print('Terminating report.')
-            generate(venue_records)
-            return
-        
-        os.makedirs(output_dir, exist_ok=True)
+        ui.print_warning('WARNING: A venues report folder with the same name already exists at the selected location. Please move it or select a different directory. This report will terminate.')
+        generate(venue_records)
+        return
 
     print('Classifying records by market...')
     venues_by_market = defaultdict(list[VenueRecord])
