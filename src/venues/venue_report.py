@@ -71,15 +71,15 @@ def generate(venue_records: set['VenueRecord']=None):
     # A bunch of other queries
     print('\nFor default values on any of the following questions, continue without entering anything.')
     # Query saturation period
-    saturation_period = ui.query_num('Zone Saturation Period (weeks): ', 16)
+    saturation_period = ui.query_int('Zone Saturation Period (weeks): ', 16)
     # Query for the "around the same time period"
-    prox_weeks = ui.query_num('Scheduling Period Lookback Margin (weeks): ', 2)
+    prox_weeks = ui.query_int('Scheduling Period Lookback Margin (weeks): ', 2)
     # Query minimum RSVPs
-    min_rsvps = ui.query_num('Minimum RSVPs: ', 16)
+    min_rsvps = ui.query_int('Minimum RSVPs: ', 16)
     # Query minimum ROR value
-    min_ror = ui.query_num('Minimum ROR (%): ', 0)
+    min_ror = ui.query_float('Minimum ROR (%): ', 0)
     # Query venue cap
-    num_venues = ui.query_num('Number of venues per market: ', 20)
+    num_venues = ui.query_int('Number of venues per market: ', 20)
     # Query specific markets
     print('\nFor specific markets, use market codes separated by spaces (e.g., "HOU PDX...")')
     markets = ui.query_user('Specific Markets: ').split(' ')
