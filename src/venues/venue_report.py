@@ -76,6 +76,8 @@ def generate(venue_records: set['VenueRecord']=None):
     prox_weeks = ui.query_num('Scheduling Period Lookback Margin (weeks): ', 2)
     # Query minimum RSVPs
     min_rsvps = ui.query_num('Minimum RSVPs: ', 16)
+    # Query minimum ROR value
+    min_ror = ui.query_num('Minimum ROR (%): ', 0)
     # Query venue cap
     num_venues = ui.query_num('Number of venues per market: ', 20)
     # Query specific markets
@@ -88,7 +90,7 @@ def generate(venue_records: set['VenueRecord']=None):
 
     print('Executing set exclusions...')
     # We want to exclude all zones that have had an event within four months
-    filtered_data = _filter_data(venue_records, saturation_period, start_date, min_rsvps)
+    filtered_data = _filter_data(venue_records, saturation_period, start_date, min_rsvps, min_ror)
 
     # Split venues into those who had a job around the same time last year, and those that didn't
     # sort the proximal venues by ROR
@@ -310,7 +312,7 @@ def _extract_data(headers: list[str], raw_data_sheet: list, cutoff_date: datetim
     return venue_records
 
 
-def _filter_data(venue_records: set[VenueRecord], saturation_period: int, start_date: datetime, min_rsvps: int):
+def _filter_data(venue_records: set[VenueRecord], saturation_period: int, start_date: datetime, min_rsvps: int, min_ror: float):
     """Filters out undesirable venues. The current criteria is based on minimum
     number of RSVPs and whether a venue's zone has had a seminar within the `saturation_period` (weeks).
     """
@@ -324,7 +326,8 @@ def _filter_data(venue_records: set[VenueRecord], saturation_period: int, start_
     filtered_data = {
         venue for venue in venue_records
         if (venue.zone not in saturated_zones
-            and venue.latest_job.rvsps >= min_rsvps)
+            and venue.latest_job.rvsps >= min_rsvps
+            and venue.latest_job.ror >= min_ror)
     }
 
     return filtered_data
