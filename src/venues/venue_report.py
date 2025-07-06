@@ -9,6 +9,8 @@ import os
 from tqdm import tqdm
 from venues.records import VenueRecord
 from venues.errors import HashError, NoValidSessionsException
+from openpyxl.styles import Border, Side, PatternFill, Alignment
+from openpyxl.styles import Font
 
 expected_headers = [
             'Job#', 'User', 'MKT', 'LOC#', 'Week', 'Zone', 'Restaurant',
@@ -69,22 +71,20 @@ def generate(venue_records: set['VenueRecord']=None):
     # A bunch of other queries
     print('\nFor default values on any of the following questions, continue without entering anything.')
     # Query saturation period
-    saturation_period = int(ui.query_user('Zone Saturation Period (weeks): ', '16'))
+    saturation_period = ui.query_num('Zone Saturation Period (weeks): ', 16)
+    # Query for the "around the same time period"
+    prox_weeks = ui.query_num('Scheduling Period Lookback Margin (weeks): ', 2)
     # Query minimum RSVPs
-    min_rsvps = int(ui.query_user('Minimum RSVPs: ', '16'))
+    min_rsvps = ui.query_num('Minimum RSVPs: ', 16)
     # Query venue cap
-    num_venues = int(ui.query_user('Number of venues per market: ', '20'))
+    num_venues = ui.query_num('Number of venues per market: ', 20)
     # Query specific markets
     print('\nFor specific markets, use market codes separated by spaces (e.g., "HOU PDX...")')
     markets = ui.query_user('Specific Markets: ').split(' ')
 
-    # SORT DATA
     # Exclude venues...
-    # 1. Whose average RSVPs do not meet min_rsvps, and
+    # 1. Whose last RSVPs do not meet min_rsvps, and
     # 2. Who are in a zone which has had a job within the last four months
-    #
-    # Sort venues...
-    # If venue had a session within two weeks last year of scheduling period 
 
     print('Executing set exclusions...')
     # We want to exclude all zones that have had an event within four months
@@ -97,14 +97,14 @@ def generate(venue_records: set['VenueRecord']=None):
     print('Performing optimizations...')
     proximal_venues = {
         venue for venue in filtered_data
-        if venue.around_time_last_year(start_date, end_date, prox_weeks=2)
+        if venue.around_time_last_year(start_date, end_date, prox_weeks)
     }
 
     proximal_venues = sorted(proximal_venues, key=lambda venue: venue.latest_job.ror, reverse=True)
 
     nonproximal_venues = {
         venue for venue in filtered_data
-        if not venue.around_time_last_year(start_date, end_date, prox_weeks=2)
+        if not venue.around_time_last_year(start_date, end_date, prox_weeks)
     }
 
     nonproximal_venues = sorted(nonproximal_venues, key=lambda venue: venue.latest_job.ror, reverse=True)
@@ -135,15 +135,9 @@ def generate(venue_records: set['VenueRecord']=None):
     try:
         os.makedirs(output_dir, exist_ok=False)
     except OSError:
-        ui.print_warning('WARNING: A venues report folder with the same name already exists at the selected location and will be overwritten. Press N to abort. Press any other key to continue.')
-        keypress = ui.pause()
-
-        if (keypress == b'n' or keypress == b'N'):
-            print('Terminating report.')
-            generate(venue_records)
-            return
-        
-        os.makedirs(output_dir, exist_ok=True)
+        ui.print_warning('WARNING: A venues report folder with the same name already exists at the selected location. Please move it or select a different directory. This report will terminate.')
+        generate(venue_records)
+        return
 
     print('Classifying records by market...')
     venues_by_market = defaultdict(list[VenueRecord])
@@ -166,9 +160,9 @@ def generate(venue_records: set['VenueRecord']=None):
         headers = [
             'Job#', 'User', 'MKT', 'LOC#', 'Week', 'Zone',
             'Restaurant', 'St Address', 'City', 'ST', 'ZIP',
-            'Mail Piece', 'Month', 'Year', '# Sessions',
-            'Session Type', 'Qty', 'RSVPs', 'RMI', 'ROR (%)', 
-            'Average RSVPs', 'Average ROR (%)']
+            'Mail Piece', 'Qty', 'Venue/Last', '# Sessions', 
+            'Session Type', 'RSVPs', 'RMI', 'ROR%', 'Venue/Qualifier', 
+            'RSVPs', 'Venue use 12 months', 'Average ROR%']
 
         ws.append(headers)
 
@@ -177,9 +171,11 @@ def generate(venue_records: set['VenueRecord']=None):
 
         for venue in venues:
             if i < num_venues:
-                row = venue.to_entry()
+                row = venue.to_entry(start_date, end_date, prox_weeks)
                 ws.append(row)
                 i += 1
+
+        _style_workbook(wb)
 
         file_path = os.path.join(output_dir, f'{market}_{start_date.strftime("%m_%d_%y")}-{end_date.strftime("%m_%d_%y")}.xlsx')
 
@@ -321,14 +317,50 @@ def _filter_data(venue_records: set[VenueRecord], saturation_period: int, start_
     
     saturated_zones = {
         venue.zone for venue in venue_records 
-        if venue.within(weeks=saturation_period, ref_date=start_date)
+        if venue.jobs_within(relativedelta(weeks=saturation_period), start_date)
     }
 
     # Filter by saturated zones and minimum rsvps
     filtered_data = {
         venue for venue in venue_records
         if (venue.zone not in saturated_zones
-            and venue.average_rsvps >= min_rsvps)
+            and venue.latest_job.rvsps >= min_rsvps)
     }
 
     return filtered_data
+
+
+def _style_workbook(wb: openpyxl.Workbook):
+    """Add styles to the workbook.
+    """
+
+    # Make headers bold and pinned (freeze top row)
+    for ws in wb.worksheets:
+        # Bold headers
+        for cell in ws[1]:
+            cell.font = Font(bold=True)
+        # Freeze top row
+        ws.freeze_panes = ws['A2']
+
+    # Left justify, pad, and border cells
+    left_alignment = Alignment(horizontal="left", vertical="center", indent=0, wrap_text=True)
+    thin = Side(border_style="thin", color="000000")
+    border = Border(left=thin, right=thin, top=thin, bottom=thin)
+
+    for ws in wb.worksheets:
+        col_maxlen = {}
+        for row in ws.iter_rows():
+            for idx, cell in enumerate(row, start=1):
+
+                # Center and pad
+                cell.alignment = left_alignment
+                # Add black border
+                cell.border = border
+                # Track max length for column width
+                cell_len = len(str(cell.value)) if cell.value is not None else 0
+                col_maxlen[idx] = max(col_maxlen.get(idx, 0), cell_len)
+
+        # Set column widths
+        for idx, maxlen in col_maxlen.items():
+            col_letter = openpyxl.utils.get_column_letter(idx)
+            ws.column_dimensions[col_letter].width = maxlen + 4

@@ -1,6 +1,7 @@
 from dataclasses import dataclass
+from typing import Union
 from dateutil.relativedelta import relativedelta
-import datetime
+from datetime import datetime
 import math
 import re
 from misc import utils
@@ -63,7 +64,7 @@ class VenueRecord:
         if total_quantity == 0:
             return 0
         
-        return 100 * total_rsvps_rmis / total_quantity
+        return round(100 * total_rsvps_rmis / total_quantity, 3)
 
     @property
     def latest_job(self) -> 'JobRecord':
@@ -104,9 +105,18 @@ class VenueRecord:
     # IMPORTANT the header order MUST match
     # the order of data in to_entry()'s returned tuple.
     # there is no mechanism checking if they match.
-    def to_entry(self) -> tuple[str]:
-        """Returns a spreadsheet-ready representation of this venue.
+    def to_entry(self, start_date: datetime, end_date: datetime, prox_weeks: int) -> tuple[str]:
+        """Returns a spreadsheet-ready tuple representation of this venue for the given date range.
+        Args:
+            start_date (datetime): The start date of the scheduling period.
+            end_date (datetime): The end date of the scheduling period.
         """
+
+        qual_job = self.around_time_last_year(start_date, end_date, prox_weeks)
+
+        qual_job_date = qual_job[0].datetime.strftime("%m/%d/%Y") if qual_job is not None else ''
+        qual_job_rsvps = qual_job[1].rvsps if qual_job is not None else ''
+
         return (
             self.latest_job.id,
             self.latest_job.user,
@@ -120,37 +130,37 @@ class VenueRecord:
             self.state,
             self.zip,
             "Menu",  # Rod wants everything to say Menu
-            self.latest_job.month,
-            self.latest_job.year,
+
+            self.latest_job.quantity,
+            self.latest_job.sessions[-1].datetime.strftime("%m/%d/%Y"),
             self.latest_job.num_sessions,
             self.latest_job.session_type,
-            self.latest_job.quantity,
             self.latest_job.rvsps,
             self.latest_job.rmi,
             self.latest_job.ror,
-            self.average_rsvps,
+
+            qual_job_date,
+            qual_job_rsvps,
+
+            len(self.jobs_within(relativedelta(months=12))),
             self.average_ror
         )
     
-    def within(self, weeks: int, ref_date: datetime) -> bool:
-        """Returns `True` if at least one session in a job took
-        place within a certain number of weeks from `ref_date`.
-
-        E.g., `SomeVenue.within(16, datetime.now())` would return `True`
-        if `SomeVenue` had a job within 16 weeks of today.
+    def jobs_within(self, time: relativedelta, ref_date: datetime=datetime.now()) -> list['JobRecord']:
+        """Returns a list of all jobs within `time` of `ref_date`.
         """
-        threshold_date = ref_date - relativedelta(weeks=weeks)
-
+        jobs = []
         for job in self.job_records:
             for session in job.sessions:
-                if session.datetime > threshold_date:
-                    return True
-        
-        return False
+                if session.datetime >= ref_date - time:
+                    jobs.append(job)
+                    break
+        return jobs
     
-    def around_time_last_year(self, start_date: datetime, end_date: datetime, prox_weeks: int) -> bool:
-        """Returns `True` if at least one session in a job took place
-        during the time last year between `start_date` and `end_date` or within `prox_weeks` weeks thereof.
+    def around_time_last_year(self, start_date: datetime, end_date: datetime, prox_weeks: int) -> Union[tuple[Union['SessionRecord', 'JobRecord']], None]:
+        """Returns a tuple with the session and job record that qualifies this job as around the same
+        time last year (specifically, the session must be within `prox_weeks` of the start or end
+        date or be between the two).
         """
         start_threshold = start_date - relativedelta(years=1) - relativedelta(weeks=prox_weeks)
         end_threshold = end_date - relativedelta(years=1) + relativedelta(weeks=prox_weeks)
@@ -159,9 +169,9 @@ class VenueRecord:
             for session in job.sessions:
                 if (session.datetime >= start_threshold and
                     session.datetime <= end_threshold):
-                    return True
+                    return (session, job)
         
-        return False
+        return None
 
     def add_job_record(self, entry: dict[str, str]) -> None:
         """Create a job record for `entry` and add it to this venue's job records
@@ -184,7 +194,7 @@ class JobRecord:
     month: str
     year: int
     num_sessions: int
-    sessions: set['SessionRecord']
+    sessions: list['SessionRecord']
     quantity: int
     rvsps: int
     rmi: int
@@ -245,7 +255,7 @@ class JobRecord:
         if self.quantity == 0:
             return 0
         
-        return 100 * (self.rvsps + self.rmi) / self.quantity
+        return round(100 * (self.rvsps + self.rmi) / self.quantity, 3)
     
     @staticmethod
     def from_entry(entry: dict[str, str]) -> 'JobRecord':
@@ -274,7 +284,7 @@ class SessionRecord:
     job."""
     meal_type: str
     day_of_week: str
-    datetime: datetime.datetime
+    datetime: datetime
 
     def __eq__(self, other: 'SessionRecord') -> bool:
         return (self.meal_type == other.meal_type and
@@ -282,10 +292,10 @@ class SessionRecord:
                 self.datetime == other.datetime)
     
     @staticmethod
-    def from_entry(entry: dict[str, str]) -> set['SessionRecord']:
+    def from_entry(entry: dict[str, str]) -> list['SessionRecord']:
         """Create a set of session records from an entry dictionary.
         """
-        sessions: set['SessionRecord'] = set()
+        sessions: list['SessionRecord'] = []
 
         for day in (1, 2, 3):
             for meal_type in ('Lunch', 'Dinner'):
@@ -297,7 +307,7 @@ class SessionRecord:
                 # so we just ignore if the datestring returns a ValueError
                 # because the datestring is empty.
                 try:
-                    date_and_time = datetime.datetime.combine(entry[date_key], entry[time_key])
+                    date_and_time = datetime.combine(entry[date_key], entry[time_key])
                 except (ValueError, TypeError):
                     continue
 
@@ -306,7 +316,7 @@ class SessionRecord:
                     entry[day_of_week_key],
                     date_and_time)
                     
-                sessions.add(new_session)
+                sessions.append(new_session)
         
         if len(sessions) == 0:
             raise NoValidSessionsException('No valid sessions found in entry.')
