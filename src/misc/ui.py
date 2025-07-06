@@ -45,7 +45,7 @@ def query_int(msg: str, default: int=None) -> int:
         if resp == '' and default is not None:
             return default
     
-        ui.print_error(f"'{resp}' is not a valid number. Try again.")
+        ui.print_error(f"'{resp}' is not a valid whole number. Try again.")
         return query_int(msg, default)
 
     return resp
@@ -60,7 +60,7 @@ def query_float(msg: str, default: float=None) -> float:
             return default
     
         ui.print_error(f"'{resp}' is not a valid number. Try again.")
-        return query_int(msg, default)
+        return query_float(msg, default)
 
     return resp
      

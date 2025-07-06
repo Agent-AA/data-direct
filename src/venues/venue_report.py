@@ -80,6 +80,7 @@ def generate(venue_records: set['VenueRecord']=None):
     min_ror = ui.query_float('Minimum ROR (%): ', 0)
     # Query venue cap
     num_venues = ui.query_int('Number of venues per market: ', 20)
+
     # Query specific markets
     print('\nFor specific markets, use market codes separated by spaces (e.g., "HOU PDX...")')
     markets = ui.query_user('Specific Markets: ').split(' ')
