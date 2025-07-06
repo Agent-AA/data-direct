@@ -71,13 +71,16 @@ def generate(venue_records: set['VenueRecord']=None):
     # A bunch of other queries
     print('\nFor default values on any of the following questions, continue without entering anything.')
     # Query saturation period
-    saturation_period = ui.query_num('Zone Saturation Period (weeks): ', 16)
+    saturation_period = ui.query_int('Zone Saturation Period (weeks): ', 16)
     # Query for the "around the same time period"
-    prox_weeks = ui.query_num('Scheduling Period Lookback Margin (weeks): ', 2)
+    prox_weeks = ui.query_int('Scheduling Period Lookback Margin (weeks): ', 2)
     # Query minimum RSVPs
-    min_rsvps = ui.query_num('Minimum RSVPs: ', 16)
+    min_rsvps = ui.query_int('Minimum RSVPs: ', 16)
+    # Query minimum ROR value
+    min_ror = ui.query_float('Minimum ROR (%): ', 0)
     # Query venue cap
-    num_venues = ui.query_num('Number of venues per market: ', 20)
+    num_venues = ui.query_int('Number of venues per market: ', 20)
+
     # Query specific markets
     print('\nFor specific markets, use market codes separated by spaces (e.g., "HOU PDX...")')
     markets = ui.query_user('Specific Markets: ').split(' ')
@@ -88,7 +91,7 @@ def generate(venue_records: set['VenueRecord']=None):
 
     print('Executing set exclusions...')
     # We want to exclude all zones that have had an event within four months
-    filtered_data = _filter_data(venue_records, saturation_period, start_date, min_rsvps)
+    filtered_data = _filter_data(venue_records, saturation_period, start_date, min_rsvps, min_ror)
 
     # Split venues into those who had a job around the same time last year, and those that didn't
     # sort the proximal venues by ROR
@@ -310,7 +313,7 @@ def _extract_data(headers: list[str], raw_data_sheet: list, cutoff_date: datetim
     return venue_records
 
 
-def _filter_data(venue_records: set[VenueRecord], saturation_period: int, start_date: datetime, min_rsvps: int):
+def _filter_data(venue_records: set[VenueRecord], saturation_period: int, start_date: datetime, min_rsvps: int, min_ror: float):
     """Filters out undesirable venues. The current criteria is based on minimum
     number of RSVPs and whether a venue's zone has had a seminar within the `saturation_period` (weeks).
     """
@@ -324,7 +327,8 @@ def _filter_data(venue_records: set[VenueRecord], saturation_period: int, start_
     filtered_data = {
         venue for venue in venue_records
         if (venue.zone not in saturated_zones
-            and venue.latest_job.rvsps >= min_rsvps)
+            and venue.latest_job.rvsps >= min_rsvps
+            and venue.latest_job.ror >= min_ror)
     }
 
     return filtered_data

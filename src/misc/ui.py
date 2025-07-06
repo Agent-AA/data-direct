@@ -36,7 +36,7 @@ def query_user(msg: str, default: str='') -> str:
     
     return resp if resp != '' else default
 
-def query_num(msg: str, default: int=None) -> int:
+def query_int(msg: str, default: int=None) -> int:
     ui.showCursor()
     try:
         resp = query_user(msg, str(default))
@@ -45,8 +45,22 @@ def query_num(msg: str, default: int=None) -> int:
         if resp == '' and default is not None:
             return default
     
+        ui.print_error(f"'{resp}' is not a valid whole number. Try again.")
+        return query_int(msg, default)
+
+    return resp
+
+def query_float(msg: str, default: float=None) -> float:
+    ui.showCursor()
+    try:
+        resp = query_user(msg, str(default))
+        resp = float(resp)
+    except:
+        if resp == '' and default is not None:
+            return default
+    
         ui.print_error(f"'{resp}' is not a valid number. Try again.")
-        return query_num(msg, default)
+        return query_float(msg, default)
 
     return resp
      
