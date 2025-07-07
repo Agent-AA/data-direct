@@ -38,7 +38,7 @@ def generate(venue_records: set['VenueRecord']=None):
         ui.pause()
 
         # Prompt for excel file
-        file_path = _get_file_path()
+        file_path = _get_file_path(test=True)
 
         # Load file
         headers, raw_data_sheet = _load_excel(file_path)
@@ -121,8 +121,8 @@ def generate(venue_records: set['VenueRecord']=None):
     ui.prompt_user('\nThis program will now prompt you to select an ouput directory. Press any key to continue.')
     ui.pause()
     
-    selected_dir = ui.promptDirectory()
-    #selected_dir = 'C:\\Users\\alexc\\Documents\\GitHub\\addirectai\\test'
+    #selected_dir = ui.promptDirectory()
+    selected_dir = 'C:\\Users\\alexc\\Documents\\data-direct\\test'
 
     if selected_dir == '':
         ui.print_error('No directory selected. Terminating report.')
@@ -199,7 +199,7 @@ def _get_file_path(test: bool=False) -> str:
     error and exit if the user enters an empty string.
     """
     if test:
-        file_path = 'C:\\Users\\alexc\\Documents\\GitHub\\addirectai\\test\\test_input.xlsx'
+        file_path = 'C:\\Users\\alexc\\Documents\\data-direct\\test\\test_input.xlsx'
     else:
         file_path = ui.promptFile((('Excel Spreadsheet', ('*.xlsx')),('All files', '*.*')))
 
