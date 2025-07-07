@@ -43,10 +43,8 @@ def generate(venue_records: set['VenueRecord']=None):
         # Load file
         headers, raw_data_sheet = _load_excel(file_path)
         
-        # Query for historical data range
-        print('Please enter the historical cutoff date for these data (default is 16 months prior to today).')
         cutoff_date = ui.query_date(
-            'Cutoff date (MM/DD/YY): ',
+            'Data Set Cutoff Date (MM/DD/YY): ',
             default=datetime.now() - relativedelta(months=16))
         
         print('Extracting data. This may take a minute...')
