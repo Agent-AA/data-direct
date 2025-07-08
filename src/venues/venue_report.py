@@ -3,13 +3,12 @@ from datetime import datetime
 from typing import overload
 from dateutil.relativedelta import relativedelta
 import misc.ui as ui
-import misc.utils as utils
 import openpyxl
 import os
 from tqdm import tqdm
 from venues.records import VenueRecord
 from venues.errors import HashError, NoValidSessionsException
-from openpyxl.styles import Border, Side, PatternFill, Alignment
+from openpyxl.styles import Border, Side, Alignment
 from openpyxl.styles import Font
 
 expected_headers = [
