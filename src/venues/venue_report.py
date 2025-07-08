@@ -163,7 +163,7 @@ def generate(venue_records: set['VenueRecord']=None):
             'Restaurant', 'St Address', 'City', 'ST', 'ZIP',
             'Mail Piece', 'Qty', 'Venue/Last', '# Sessions', 
             'Session Type', 'RSVPs', 'RMI', 'ROR%', 'Venue/Qualifier', 
-            'RSVPs', 'Venue use 12 months', 'Average ROR%']
+            'RSVPs', 'ROR', 'Venue use 12 months', 'Average ROR%']
 
         ws.append(headers)
 
@@ -294,12 +294,12 @@ def _extract_data(headers: list[str], raw_data_sheet: list, cutoff_date: datetim
             #tqdm.write(ui.warning(f'No valid sessions found for job {entry['Job#']}. Skipping this job.'))
             pass
 
-        except (TypeError, ValueError):
+        except (TypeError, ValueError) as e:
             #if entry['Job#'] is not None:
             #    tqdm.write(ui.warning(f'Job {entry['Job#']} is invalidly formatted. Skipping this job.'))
             pass
 
-        except (HashError):
+        except (HashError) as e:
             pass
 
         #except BaseException:

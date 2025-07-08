@@ -116,6 +116,7 @@ class VenueRecord:
 
         qual_job_date = qual_job[0].datetime.strftime("%m/%d/%Y") if qual_job is not None else ''
         qual_job_rsvps = qual_job[1].rvsps if qual_job is not None else ''
+        qual_job_ror = qual_job[1].ror if qual_job is not None else ''
 
         return (
             self.latest_job.id,
@@ -141,6 +142,7 @@ class VenueRecord:
 
             qual_job_date,
             qual_job_rsvps,
+            qual_job_ror,
 
             len(self.jobs_within(relativedelta(months=12))),
             self.average_ror
