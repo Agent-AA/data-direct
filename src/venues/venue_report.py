@@ -158,7 +158,7 @@ def generate(venue_records: set['VenueRecord']=None):
         # from Venue.to_entry() must also be changed so that the header
         # order matches the data order.
         headers = [
-            'Job#', 'User', 'MKT', 'LOC#', 'Week', 'Zone',
+            'Job#', 'User', 'MKT', 'LOC#', 'Week', 'Zone', 'Zone/Last',
             'Restaurant', 'St Address', 'City', 'ST', 'ZIP',
             'Mail Piece', 'Qty', 'Venue/Last', '# Sessions', 
             'Session Type', 'RSVPs', 'RMI', 'ROR%', 'Venue/Qualifier', 
@@ -171,7 +171,7 @@ def generate(venue_records: set['VenueRecord']=None):
 
         for venue in venues:
             if i < num_venues:
-                row = venue.to_entry(start_date, end_date, prox_weeks)
+                row = venue.to_entry(start_date, end_date, prox_weeks, venue_records)
                 ws.append(row)
                 i += 1
 

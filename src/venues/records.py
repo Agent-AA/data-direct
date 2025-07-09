@@ -105,26 +105,44 @@ class VenueRecord:
     # IMPORTANT the header order MUST match
     # the order of data in to_entry()'s returned tuple.
     # there is no mechanism checking if they match.
-    def to_entry(self, start_date: datetime, end_date: datetime, prox_weeks: int) -> tuple[str]:
+    def to_entry(self, start_date: datetime, end_date: datetime, prox_weeks: int, venue_records: list['VenueRecord']) -> tuple[str]:
         """Returns a spreadsheet-ready tuple representation of this venue for the given date range.
         Args:
             start_date (datetime): The start date of the scheduling period.
             end_date (datetime): The end date of the scheduling period.
         """
 
+        # Compute the qualifying job for this venue
         qual_job = self.around_time_last_year(start_date, end_date, prox_weeks)
 
         qual_job_date = qual_job[0].datetime.strftime("%m/%d/%Y") if qual_job is not None else ''
         qual_job_rsvps = qual_job[1].rvsps if qual_job is not None else ''
         qual_job_ror = qual_job[1].ror if qual_job is not None else ''
 
+
+        # Compute the last time we visited this zone
+        last_zone_visit = self.latest_job.end_date  # start at last job of this venue
+        # Check other venues
+        for otherVenue in venue_records:
+            # If other venue is in this zone, check to see if its last date is after
+            # this current last_zone_visit date.
+            if (otherVenue.zone == self.zone
+                and otherVenue.latest_job.end_date > last_zone_visit):
+
+                last_zone_visit = otherVenue.latest_job.end_date
+        
+
+        # Create our entry and return it
         return (
             self.latest_job.id,
             self.latest_job.user,
             self.market,
             self.loc_num,
             self.latest_job.week,
+
             self.zone,
+            last_zone_visit.strftime("%m/%d/%Y"),
+
             self.restaurant,
             self.street,
             self.city,
