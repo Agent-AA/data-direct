@@ -350,18 +350,26 @@ def _style_workbook(wb: openpyxl.Workbook):
 
     for ws in wb.worksheets:
         col_maxlen = {}
-        for row in ws.iter_rows():
+        
+        # Skip empty worksheets
+        if ws.max_row == 0:
+            continue
+            
+        for row_num, row in enumerate(ws.iter_rows(), start=1):
             for idx, cell in enumerate(row, start=1):
-
                 # Center and pad
                 cell.alignment = left_alignment
                 # Add black border
                 cell.border = border
-                # Track max length for column width
-                cell_len = len(str(cell.value)) if cell.value is not None else 0
-                col_maxlen[idx] = max(col_maxlen.get(idx, 0), cell_len)
+                
+                # Track max length for column width, excluding headers (row 1)
+                if row_num > 1:  # Skip header row for width calculation
+                    cell_len = len(str(cell.value)) if cell.value is not None else 0
+                    col_maxlen[idx] = max(col_maxlen.get(idx, 0), cell_len)
 
-        # Set column widths
+        # Set column widths based on data rows only
         for idx, maxlen in col_maxlen.items():
             col_letter = openpyxl.utils.get_column_letter(idx)
-            ws.column_dimensions[col_letter].width = maxlen + 4
+            # Add padding and set a reasonable minimum width
+            width = max(maxlen + 4, 8)  # Minimum width of 8
+            ws.column_dimensions[col_letter].width = width
