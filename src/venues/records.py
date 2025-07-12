@@ -126,7 +126,10 @@ class VenueRecord:
         for otherVenue in venue_records:
             # If other venue is in this zone, check to see if its last date is after
             # this current last_zone_visit date.
+            # Zone names are not unique to markets, so, e.g., G101 Inner
+            # Could appear in multiple markets.
             if (otherVenue.zone == self.zone
+                and otherVenue.market == self.market
                 and otherVenue.latest_job.end_date > last_zone_visit):
 
                 last_zone_visit = otherVenue.latest_job.end_date
