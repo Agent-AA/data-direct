@@ -162,7 +162,7 @@ def generate(venue_records: set['VenueRecord']=None):
             'Restaurant', 'St Address', 'City', 'ST', 'ZIP',
             'Mail Piece', 'Qty', 'Venue/Last', '# Sessions', 
             'Session Type', 'RSVPs', 'RMI', 'ROR%', 'Venue/Qualifier', 
-            'RSVPs', 'ROR', 'Venue/zone use 12mths', 'Average ROR%']
+            'RSVPs', 'ROR', 'Zone use within 12 months', 'Average ROR%']
 
         ws.append(headers)
 
