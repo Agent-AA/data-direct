@@ -315,15 +315,17 @@ def _filter_data(venue_records: set[VenueRecord], saturation_period: int, start_
     number of RSVPs and whether a venue's zone has had a seminar within the `saturation_period` (weeks).
     """
     
+    # Zone codes are reused across markets - we need to check by both zone and market
+    # E.g., there could be a G101 for both HOU and PDX
     saturated_zones = {
-        venue.zone for venue in venue_records 
+        (venue.market, venue.zone) for venue in venue_records 
         if venue.jobs_within(relativedelta(weeks=saturation_period), start_date)
     }
 
     # Filter by saturated zones and minimum rsvps
     filtered_data = {
         venue for venue in venue_records
-        if (venue.zone not in saturated_zones
+        if ((venue.market, venue.zone) not in saturated_zones
             and venue.latest_job.rvsps >= min_rsvps
             and venue.latest_job.ror >= min_ror)
     }
