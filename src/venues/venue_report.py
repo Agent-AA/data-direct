@@ -95,24 +95,9 @@ def generate(venue_records: set['VenueRecord']=None):
     # sort the non-proximal venues first by oldest last job month
     # and then by ROR
     print('Performing optimizations...')
-    proximal_venues = {
-        venue for venue in filtered_data
-        if venue.around_time_last_year(start_date, end_date, prox_weeks)
-    }
 
-    proximal_venues = sorted(proximal_venues, key=lambda venue: venue.latest_job.ror, reverse=True)
-
-    nonproximal_venues = {
-        venue for venue in filtered_data
-        if not venue.around_time_last_year(start_date, end_date, prox_weeks)
-    }
-
-    nonproximal_venues = sorted(nonproximal_venues, key=lambda venue: venue.latest_job.ror, reverse=True)
-    nonproximal_venues = sorted(nonproximal_venues, key=lambda venue: venue.latest_job.month_date)
-
-    # Recombine so that proximal venues are on top.
-    sorted_data = proximal_venues + nonproximal_venues
-
+    # Rank venues
+    sorted_data = _sort_data(filtered_data, start_date, end_date, prox_weeks)
 
     ui.print_success('Exclusions and optimizations complete.')
 
@@ -168,12 +153,19 @@ def generate(venue_records: set['VenueRecord']=None):
 
         # This is for capping number of written venues
         i = 0
+        # And this is for tracking which zones we've already written
+        # venues for. We only want a maximum of one venue per zone
+        # per market.
+        used_zones: set[str] = set()
 
         for venue in venues:
-            if i < num_venues:
+            if (i < num_venues 
+                and venue.zone not in used_zones):
+                
                 row = venue.to_entry(start_date, end_date, prox_weeks, venue_records)
                 ws.append(row)
                 i += 1
+                used_zones.add(venue.zone)
 
         _style_workbook(wb)
 
@@ -331,6 +323,30 @@ def _filter_data(venue_records: set[VenueRecord], saturation_period: int, start_
     }
 
     return filtered_data
+
+
+def _sort_data(filtered_data: set[VenueRecord], start_date: datetime, end_date: datetime, prox_weeks: int) -> list[VenueRecord]:
+    """Sorts venues first by whether they had a job around the same time last year,
+    and then by ROR.
+    """
+    
+    # Split into proximal and non-proximal venues
+    proximal_venues = []
+    nonproximal_venues = []
+
+    for venue in filtered_data:
+        if venue.around_time_last_year(start_date, end_date, prox_weeks):
+            proximal_venues.append(venue)
+        else:
+            nonproximal_venues.append(venue)
+
+    # Sort proximal venues by ROR
+    proximal_venues.sort(key=lambda v: v.latest_job.ror, reverse=True)
+
+    # Sort non-proximal venues by ROR
+    nonproximal_venues.sort(key=lambda v: v.latest_job.ror, reverse=True)
+
+    return proximal_venues + nonproximal_venues
 
 
 def _style_workbook(wb: openpyxl.Workbook):
