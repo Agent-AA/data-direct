@@ -3,13 +3,12 @@ from datetime import datetime
 from typing import overload
 from dateutil.relativedelta import relativedelta
 import misc.ui as ui
-import misc.utils as utils
 import openpyxl
 import os
 from tqdm import tqdm
 from venues.records import VenueRecord
 from venues.errors import HashError, NoValidSessionsException
-from openpyxl.styles import Border, Side, PatternFill, Alignment
+from openpyxl.styles import Border, Side, Alignment
 from openpyxl.styles import Font
 
 expected_headers = [
@@ -38,15 +37,13 @@ def generate(venue_records: set['VenueRecord']=None):
         ui.pause()
 
         # Prompt for excel file
-        file_path = _get_file_path()
+        file_path = _get_file_path(test=False)
 
         # Load file
         headers, raw_data_sheet = _load_excel(file_path)
         
-        # Query for historical data range
-        print('Please enter the historical cutoff date for these data (default is 16 months prior to today).')
         cutoff_date = ui.query_date(
-            'Cutoff date (MM/DD/YY): ',
+            'Data Set Cutoff Date (MM/DD/YY): ',
             default=datetime.now() - relativedelta(months=16))
         
         print('Extracting data. This may take a minute...')
@@ -124,7 +121,7 @@ def generate(venue_records: set['VenueRecord']=None):
     ui.pause()
     
     selected_dir = ui.promptDirectory()
-    #selected_dir = 'C:\\Users\\alexc\\Documents\\GitHub\\addirectai\\test'
+    #selected_dir = 'C:\\Users\\alexc\\Documents\\data-direct\\test'
 
     if selected_dir == '':
         ui.print_error('No directory selected. Terminating report.')
@@ -161,11 +158,11 @@ def generate(venue_records: set['VenueRecord']=None):
         # from Venue.to_entry() must also be changed so that the header
         # order matches the data order.
         headers = [
-            'Job#', 'User', 'MKT', 'LOC#', 'Week', 'Zone',
+            'Job#', 'User', 'MKT', 'LOC#', 'Week', 'Zone', 'Zone/Last',
             'Restaurant', 'St Address', 'City', 'ST', 'ZIP',
             'Mail Piece', 'Qty', 'Venue/Last', '# Sessions', 
             'Session Type', 'RSVPs', 'RMI', 'ROR%', 'Venue/Qualifier', 
-            'RSVPs', 'Venue use 12 months', 'Average ROR%']
+            'RSVPs', 'ROR', 'Venue/zone use 12mths', 'Average ROR%']
 
         ws.append(headers)
 
@@ -174,7 +171,7 @@ def generate(venue_records: set['VenueRecord']=None):
 
         for venue in venues:
             if i < num_venues:
-                row = venue.to_entry(start_date, end_date, prox_weeks)
+                row = venue.to_entry(start_date, end_date, prox_weeks, venue_records)
                 ws.append(row)
                 i += 1
 
@@ -201,7 +198,7 @@ def _get_file_path(test: bool=False) -> str:
     error and exit if the user enters an empty string.
     """
     if test:
-        file_path = 'C:\\Users\\alexc\\Documents\\GitHub\\addirectai\\test\\test_input.xlsx'
+        file_path = 'C:\\Users\\alexc\\Documents\\data-direct\\test\\test_input.xlsx'
     else:
         file_path = ui.promptFile((('Excel Spreadsheet', ('*.xlsx')),('All files', '*.*')))
 
@@ -296,12 +293,12 @@ def _extract_data(headers: list[str], raw_data_sheet: list, cutoff_date: datetim
             #tqdm.write(ui.warning(f'No valid sessions found for job {entry['Job#']}. Skipping this job.'))
             pass
 
-        except (TypeError, ValueError):
+        except (TypeError, ValueError) as e:
             #if entry['Job#'] is not None:
             #    tqdm.write(ui.warning(f'Job {entry['Job#']} is invalidly formatted. Skipping this job.'))
             pass
 
-        except (HashError):
+        except (HashError) as e:
             pass
 
         #except BaseException:
@@ -353,18 +350,26 @@ def _style_workbook(wb: openpyxl.Workbook):
 
     for ws in wb.worksheets:
         col_maxlen = {}
-        for row in ws.iter_rows():
+        
+        # Skip empty worksheets
+        if ws.max_row == 0:
+            continue
+            
+        for row_num, row in enumerate(ws.iter_rows(), start=1):
             for idx, cell in enumerate(row, start=1):
-
                 # Center and pad
                 cell.alignment = left_alignment
                 # Add black border
                 cell.border = border
-                # Track max length for column width
-                cell_len = len(str(cell.value)) if cell.value is not None else 0
-                col_maxlen[idx] = max(col_maxlen.get(idx, 0), cell_len)
+                
+                # Track max length for column width, excluding headers (row 1)
+                if row_num > 1:  # Skip header row for width calculation
+                    cell_len = len(str(cell.value)) if cell.value is not None else 0
+                    col_maxlen[idx] = max(col_maxlen.get(idx, 0), cell_len)
 
-        # Set column widths
+        # Set column widths based on data rows only
         for idx, maxlen in col_maxlen.items():
             col_letter = openpyxl.utils.get_column_letter(idx)
-            ws.column_dimensions[col_letter].width = maxlen + 4
+            # Add padding and set a reasonable minimum width
+            width = max(maxlen + 4, 8)  # Minimum width of 8
+            ws.column_dimensions[col_letter].width = width
