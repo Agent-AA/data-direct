@@ -85,6 +85,7 @@ def generate(venue_records: set['VenueRecord']=None):
     # Exclude venues...
     # 1. Whose last RSVPs do not meet min_rsvps, and
     # 2. Who are in a zone which has had a job within the last four months
+    # TODO this comment is wrong; it needs to be updated to reflect actual logic
 
     print('Executing set exclusions...')
     # We want to exclude all zones that have had an event within four months
