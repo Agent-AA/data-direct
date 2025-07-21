@@ -127,7 +127,7 @@ class VenueRecord:
         qual_job_rsvps = qual_job[1].rvsps if qual_job is not None else ''
         qual_job_ror = qual_job[1].ror if qual_job is not None else ''
 
-
+        
         # Compute the last time we visited this zone
         last_zone_visit = self.latest_job.end_date  # start at last job of this venue
         # Check other venues
