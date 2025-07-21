@@ -48,16 +48,24 @@ class VenueRecord:
         total_rsvps = sum(job.rvsps for job in self.job_records)
         return  math.ceil(total_rsvps / len(self.job_records))
 
-    @property
-    def average_ror(self) -> float:
+    def average_ror(self, within: relativedelta=None, ref_date: datetime=None) -> float:
         """Total number of RSVPs and RMIs across all
-        jobs divided by total quantity across all jobs,
+        jobs between now and some other time divided by total quantity,
         and multiplied by 100 (to express as a percent).
         """
+        if ref_date is None:
+            ref_date = datetime.now()
+
+        if within is not None:
+            jobs = self.jobs_within(within, ref_date)
+        else:
+            jobs = self.job_records
+
+
         total_rsvps_rmis = 0
         total_quantity = 0
 
-        for job in self.job_records:
+        for job in jobs:
             total_rsvps_rmis += job.rvsps + job.rmi
             total_quantity += job.quantity
         
@@ -119,14 +127,17 @@ class VenueRecord:
         qual_job_rsvps = qual_job[1].rvsps if qual_job is not None else ''
         qual_job_ror = qual_job[1].ror if qual_job is not None else ''
 
-
+        
         # Compute the last time we visited this zone
         last_zone_visit = self.latest_job.end_date  # start at last job of this venue
         # Check other venues
         for otherVenue in venue_records:
             # If other venue is in this zone, check to see if its last date is after
             # this current last_zone_visit date.
+            # Zone names are not unique to markets, so, e.g., G101 Inner
+            # Could appear in multiple markets.
             if (otherVenue.zone == self.zone
+                and otherVenue.market == self.market
                 and otherVenue.latest_job.end_date > last_zone_visit):
 
                 last_zone_visit = otherVenue.latest_job.end_date
@@ -162,19 +173,23 @@ class VenueRecord:
             qual_job_rsvps,
             qual_job_ror,
 
-            len(self.jobs_within(relativedelta(months=12))),
-            self.average_ror
+            len(self.jobs_within(relativedelta(weeks=52), start_date)),
+            self.average_ror(within=relativedelta(weeks=52), ref_date=start_date)  # average ROR for last year
         )
     
-    def jobs_within(self, time: relativedelta, ref_date: datetime=datetime.now()) -> list['JobRecord']:
-        """Returns a list of all jobs within `time` of `ref_date`.
+    def jobs_within(self, time: relativedelta, ref_date: datetime=None) -> list['JobRecord']:
+        """Returns a list of all jobs within `time` of `ref_date`. ref_date
+        will default to now if not provided.
         """
+
+        if ref_date is None:
+            ref_date = datetime.now()
+
         jobs = []
         for job in self.job_records:
-            for session in job.sessions:
-                if session.datetime >= ref_date - time:
+                if job.end_date >= ref_date - time:
                     jobs.append(job)
-                    break
+                    
         return jobs
     
     def around_time_last_year(self, start_date: datetime, end_date: datetime, prox_weeks: int) -> Union[tuple[Union['SessionRecord', 'JobRecord']], None]:

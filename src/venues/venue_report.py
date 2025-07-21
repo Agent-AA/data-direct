@@ -85,6 +85,7 @@ def generate(venue_records: set['VenueRecord']=None):
     # Exclude venues...
     # 1. Whose last RSVPs do not meet min_rsvps, and
     # 2. Who are in a zone which has had a job within the last four months
+    # TODO this comment is wrong; it needs to be updated to reflect actual logic
 
     print('Executing set exclusions...')
     # We want to exclude all zones that have had an event within four months
@@ -95,24 +96,9 @@ def generate(venue_records: set['VenueRecord']=None):
     # sort the non-proximal venues first by oldest last job month
     # and then by ROR
     print('Performing optimizations...')
-    proximal_venues = {
-        venue for venue in filtered_data
-        if venue.around_time_last_year(start_date, end_date, prox_weeks)
-    }
 
-    proximal_venues = sorted(proximal_venues, key=lambda venue: venue.latest_job.ror, reverse=True)
-
-    nonproximal_venues = {
-        venue for venue in filtered_data
-        if not venue.around_time_last_year(start_date, end_date, prox_weeks)
-    }
-
-    nonproximal_venues = sorted(nonproximal_venues, key=lambda venue: venue.latest_job.ror, reverse=True)
-    nonproximal_venues = sorted(nonproximal_venues, key=lambda venue: venue.latest_job.month_date)
-
-    # Recombine so that proximal venues are on top.
-    sorted_data = proximal_venues + nonproximal_venues
-
+    # Rank venues
+    sorted_data = _sort_data(filtered_data, start_date, end_date, prox_weeks)
 
     ui.print_success('Exclusions and optimizations complete.')
 
@@ -162,18 +148,25 @@ def generate(venue_records: set['VenueRecord']=None):
             'Restaurant', 'St Address', 'City', 'ST', 'ZIP',
             'Mail Piece', 'Qty', 'Venue/Last', '# Sessions', 
             'Session Type', 'RSVPs', 'RMI', 'ROR%', 'Venue/Qualifier', 
-            'RSVPs', 'ROR', 'Venue/zone use 12mths', 'Average ROR%']
+            'RSVPs', 'ROR', 'Zone use within 12 months', 'Average ROR%']
 
         ws.append(headers)
 
         # This is for capping number of written venues
         i = 0
+        # And this is for tracking which zones we've already written
+        # venues for. We only want a maximum of one venue per zone
+        # per market.
+        used_zones: set[str] = set()
 
         for venue in venues:
-            if i < num_venues:
+            if (i < num_venues 
+                and venue.zone not in used_zones):
+                
                 row = venue.to_entry(start_date, end_date, prox_weeks, venue_records)
                 ws.append(row)
                 i += 1
+                used_zones.add(venue.zone)
 
         _style_workbook(wb)
 
@@ -315,20 +308,46 @@ def _filter_data(venue_records: set[VenueRecord], saturation_period: int, start_
     number of RSVPs and whether a venue's zone has had a seminar within the `saturation_period` (weeks).
     """
     
+    # Zone codes are reused across markets - we need to check by both zone and market
+    # E.g., there could be a G101 for both HOU and PDX
     saturated_zones = {
-        venue.zone for venue in venue_records 
+        (venue.market, venue.zone) for venue in venue_records 
         if venue.jobs_within(relativedelta(weeks=saturation_period), start_date)
     }
 
     # Filter by saturated zones and minimum rsvps
     filtered_data = {
         venue for venue in venue_records
-        if (venue.zone not in saturated_zones
+        if ((venue.market, venue.zone) not in saturated_zones
             and venue.latest_job.rvsps >= min_rsvps
             and venue.latest_job.ror >= min_ror)
     }
 
     return filtered_data
+
+
+def _sort_data(filtered_data: set[VenueRecord], start_date: datetime, end_date: datetime, prox_weeks: int) -> list[VenueRecord]:
+    """Sorts venues first by whether they had a job around the same time last year,
+    and then by ROR.
+    """
+    
+    # Split into proximal and non-proximal venues
+    proximal_venues = []
+    nonproximal_venues = []
+
+    for venue in filtered_data:
+        if venue.around_time_last_year(start_date, end_date, prox_weeks):
+            proximal_venues.append(venue)
+        else:
+            nonproximal_venues.append(venue)
+
+    # Sort proximal venues by ROR
+    proximal_venues.sort(key=lambda v: v.latest_job.ror, reverse=True)
+
+    # Sort non-proximal venues by ROR
+    nonproximal_venues.sort(key=lambda v: v.latest_job.ror, reverse=True)
+
+    return proximal_venues + nonproximal_venues
 
 
 def _style_workbook(wb: openpyxl.Workbook):
