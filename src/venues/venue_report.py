@@ -37,7 +37,7 @@ def generate(venue_records: set['VenueRecord']=None):
         ui.pause()
 
         # Prompt for excel file
-        file_path = _get_file_path(test=False)
+        file_path = _get_file_path(test=True)
 
         # Load file
         headers, raw_data_sheet = _load_excel(file_path)
@@ -106,8 +106,8 @@ def generate(venue_records: set['VenueRecord']=None):
     ui.prompt_user('\nThis program will now prompt you to select an ouput directory. Press any key to continue.')
     ui.pause()
     
-    selected_dir = ui.promptDirectory()
-    #selected_dir = 'C:\\Users\\alexc\\Documents\\data-direct\\test'
+    #selected_dir = ui.promptDirectory()
+    selected_dir = 'C:\\Users\\alexc\\Documents\\data-direct\\test'  # For testing purposes
 
     if selected_dir == '':
         ui.print_error('No directory selected. Terminating report.')
@@ -148,7 +148,7 @@ def generate(venue_records: set['VenueRecord']=None):
             'Last Venue', 'Recommended Venue', 'St Address', 'City', 'ST', 'ZIP',
             'Mail Piece', 'Qty', 'Venue/Last', '# Sessions', 
             'Session Type', 'RSVPs', 'RMI', 'ROR%', 'Venue/Qualifier', 
-            'RSVPs', 'ROR', 'Zone Use', 'Average ROR%']
+            'RSVPs', 'ROR%', 'Zone Use', 'Average ROR%']
 
         ws.append(headers)
 
