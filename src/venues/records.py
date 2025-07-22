@@ -122,8 +122,7 @@ class VenueRecord:
 
         
         # Compute the last time we visited this zone, and where
-        last_zone_visit = self.latest_job.end_date  # start at last job of this venue
-        last_zone_venue = self.restaurant
+        last_zone_venue = self
 
         # Check other venues
         for otherVenue in venue_records:
@@ -133,10 +132,9 @@ class VenueRecord:
             # Could appear in multiple markets.
             if (otherVenue.zone == self.zone
                 and otherVenue.market == self.market
-                and otherVenue.latest_job.end_date > last_zone_visit):
+                and otherVenue.latest_job.end_date > last_zone_venue.latest_job.end_date):
 
-                last_zone_visit = otherVenue.latest_job.end_date
-                last_zone_venue = otherVenue.restaurant
+                last_zone_venue = otherVenue
         
         # Calculate number of times we have visited this zone since the cutoff date
         # since data before cutoff is already excluded, we simply count as normal
@@ -149,6 +147,9 @@ class VenueRecord:
                 num_zone_visits += len(venue.job_records)
 
 
+        # TODO we can combine the above two loops into one.
+
+
         # Create our entry and return it
         return (
             self.latest_job.id,
@@ -158,8 +159,9 @@ class VenueRecord:
             self.latest_job.week,
 
             self.zone,
-            last_zone_visit.strftime("%m/%d/%Y"),
-            last_zone_venue,
+            last_zone_venue.latest_job.end_date.strftime("%m/%d/%Y"),
+            last_zone_venue.restaurant,
+            last_zone_venue.latest_job.ror,
 
             self.restaurant,
             self.street,

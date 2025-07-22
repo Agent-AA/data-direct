@@ -144,11 +144,17 @@ def generate(venue_records: set['VenueRecord']=None):
         # from Venue.to_entry() must also be changed so that the header
         # order matches the data order.
         headers = [
-            'Job#', 'User', 'MKT', 'LOC#', 'Week', 'Zone', 'Zone/Last',
-            'Last Venue', 'Recommended Venue', 'St Address', 'City', 'ST', 'ZIP',
-            'Mail Piece', 'Qty', 'Venue/Last', '# Sessions', 
-            'Session Type', 'RSVPs', 'RMI', 'ROR%', 'Venue/Qualifier', 
-            'RSVPs', 'ROR%', 'Zone Use', 'Average ROR%']
+            'Job#', 'User', 'MKT', 'LOC#', 'Week', 
+
+            'Zone', 'Zone/Last', 'Last Venue', 'ROR%', 
+            
+            'Recommended Venue', 'St Address', 'City', 'ST', 'ZIP', 
+            'Mail Piece', 'Qty', 'Venue/Last', '# Sessions',  
+            'Session Type', 'RSVPs', 'RMI', 'ROR%', 
+            
+            'Venue/Qualifier',  'RSVPs', 'ROR%', 
+            
+            'Zone Use', 'Average ROR%']
 
         ws.append(headers)
 
