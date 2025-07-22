@@ -145,7 +145,7 @@ def generate(venue_records: set['VenueRecord']=None):
         # order matches the data order.
         headers = [
             'Job#', 'User', 'MKT', 'LOC#', 'Week', 'Zone', 'Zone/Last',
-            'Restaurant', 'St Address', 'City', 'ST', 'ZIP',
+            'Last Venue', 'Recommended Venue', 'St Address', 'City', 'ST', 'ZIP',
             'Mail Piece', 'Qty', 'Venue/Last', '# Sessions', 
             'Session Type', 'RSVPs', 'RMI', 'ROR%', 'Venue/Qualifier', 
             'RSVPs', 'ROR', 'Zone Use', 'Average ROR%']

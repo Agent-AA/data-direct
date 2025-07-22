@@ -121,8 +121,10 @@ class VenueRecord:
         qual_job_ror = qual_job[1].ror if qual_job is not None else ''
 
         
-        # Compute the last time we visited this zone
+        # Compute the last time we visited this zone, and where
         last_zone_visit = self.latest_job.end_date  # start at last job of this venue
+        last_zone_venue = self.restaurant
+
         # Check other venues
         for otherVenue in venue_records:
             # If other venue is in this zone, check to see if its last date is after
@@ -146,6 +148,7 @@ class VenueRecord:
 
             self.zone,
             last_zone_visit.strftime("%m/%d/%Y"),
+            last_zone_venue,
 
             self.restaurant,
             self.street,
