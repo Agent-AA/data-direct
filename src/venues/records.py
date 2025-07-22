@@ -48,24 +48,17 @@ class VenueRecord:
         total_rsvps = sum(job.rvsps for job in self.job_records)
         return  math.ceil(total_rsvps / len(self.job_records))
 
-    def average_ror(self, within: relativedelta=None, ref_date: datetime=None) -> float:
+    @property
+    def average_ror(self) -> float:
         """Total number of RSVPs and RMIs across all
-        jobs between now and some other time divided by total quantity,
+        jobs divided by total quantity,
         and multiplied by 100 (to express as a percent).
         """
-        if ref_date is None:
-            ref_date = datetime.now()
-
-        if within is not None:
-            jobs = self.jobs_within(within, ref_date)
-        else:
-            jobs = self.job_records
-
 
         total_rsvps_rmis = 0
         total_quantity = 0
 
-        for job in jobs:
+        for job in self.job_records:
             total_rsvps_rmis += job.rvsps + job.rmi
             total_quantity += job.quantity
         
@@ -173,8 +166,8 @@ class VenueRecord:
             qual_job_rsvps,
             qual_job_ror,
 
-            len(self.jobs_within(relativedelta(weeks=52), start_date)),
-            self.average_ror(within=relativedelta(weeks=52), ref_date=start_date)  # average ROR for last year
+            len(self.jobs_within(relativedelta(weeks=52))),
+            self.average_ror
         )
     
     def jobs_within(self, time: relativedelta, ref_date: datetime=None) -> list['JobRecord']:
