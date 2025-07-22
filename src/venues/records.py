@@ -136,7 +136,18 @@ class VenueRecord:
                 and otherVenue.latest_job.end_date > last_zone_visit):
 
                 last_zone_visit = otherVenue.latest_job.end_date
+                last_zone_venue = otherVenue.restaurant
         
+        # Calculate number of times we have visited this zone since the cutoff date
+        # since data before cutoff is already excluded, we simply count as normal
+        num_zone_visits = len(self.job_records)
+        for venue in venue_records:
+
+            if (venue.zone == self.zone
+                and venue.market == self.market):
+                
+                num_zone_visits += len(venue.job_records)
+
 
         # Create our entry and return it
         return (
@@ -169,7 +180,7 @@ class VenueRecord:
             qual_job_rsvps,
             qual_job_ror,
 
-            len(self.jobs_within(relativedelta(weeks=52))),
+            num_zone_visits,
             self.average_ror
         )
     
