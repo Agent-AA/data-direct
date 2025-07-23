@@ -48,24 +48,17 @@ class VenueRecord:
         total_rsvps = sum(job.rvsps for job in self.job_records)
         return  math.ceil(total_rsvps / len(self.job_records))
 
-    def average_ror(self, within: relativedelta=None, ref_date: datetime=None) -> float:
+    @property
+    def average_ror(self) -> float:
         """Total number of RSVPs and RMIs across all
-        jobs between now and some other time divided by total quantity,
+        jobs divided by total quantity,
         and multiplied by 100 (to express as a percent).
         """
-        if ref_date is None:
-            ref_date = datetime.now()
-
-        if within is not None:
-            jobs = self.jobs_within(within, ref_date)
-        else:
-            jobs = self.job_records
-
 
         total_rsvps_rmis = 0
         total_quantity = 0
 
-        for job in jobs:
+        for job in self.job_records:
             total_rsvps_rmis += job.rvsps + job.rmi
             total_quantity += job.quantity
         
@@ -128,8 +121,9 @@ class VenueRecord:
         qual_job_ror = qual_job[1].ror if qual_job is not None else ''
 
         
-        # Compute the last time we visited this zone
-        last_zone_visit = self.latest_job.end_date  # start at last job of this venue
+        # Compute the last time we visited this zone, and where
+        last_zone_venue = self
+
         # Check other venues
         for otherVenue in venue_records:
             # If other venue is in this zone, check to see if its last date is after
@@ -138,10 +132,23 @@ class VenueRecord:
             # Could appear in multiple markets.
             if (otherVenue.zone == self.zone
                 and otherVenue.market == self.market
-                and otherVenue.latest_job.end_date > last_zone_visit):
+                and otherVenue.latest_job.end_date > last_zone_venue.latest_job.end_date):
 
-                last_zone_visit = otherVenue.latest_job.end_date
+                last_zone_venue = otherVenue
         
+        # Calculate number of times we have visited this zone since the cutoff date
+        # since data before cutoff is already excluded, we simply count as normal
+        num_zone_visits = len(self.job_records)
+        for venue in venue_records:
+
+            if (venue.zone == self.zone
+                and venue.market == self.market):
+                
+                num_zone_visits += len(venue.job_records)
+
+
+        # TODO we can combine the above two loops into one.
+
 
         # Create our entry and return it
         return (
@@ -152,7 +159,9 @@ class VenueRecord:
             self.latest_job.week,
 
             self.zone,
-            last_zone_visit.strftime("%m/%d/%Y"),
+            last_zone_venue.latest_job.end_date.strftime("%m/%d/%Y"),
+            last_zone_venue.restaurant,
+            last_zone_venue.latest_job.ror,
 
             self.restaurant,
             self.street,
@@ -173,8 +182,8 @@ class VenueRecord:
             qual_job_rsvps,
             qual_job_ror,
 
-            len(self.jobs_within(relativedelta(weeks=52), start_date)),
-            self.average_ror(within=relativedelta(weeks=52), ref_date=start_date)  # average ROR for last year
+            num_zone_visits,
+            self.average_ror
         )
     
     def jobs_within(self, time: relativedelta, ref_date: datetime=None) -> list['JobRecord']:

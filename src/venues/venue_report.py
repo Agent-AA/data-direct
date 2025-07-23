@@ -107,7 +107,7 @@ def generate(venue_records: set['VenueRecord']=None):
     ui.pause()
     
     selected_dir = ui.promptDirectory()
-    #selected_dir = 'C:\\Users\\alexc\\Documents\\data-direct\\test'
+    #selected_dir = 'C:\\Users\\alexc\\Documents\\data-direct\\test'  # For testing purposes
 
     if selected_dir == '':
         ui.print_error('No directory selected. Terminating report.')
@@ -144,11 +144,17 @@ def generate(venue_records: set['VenueRecord']=None):
         # from Venue.to_entry() must also be changed so that the header
         # order matches the data order.
         headers = [
-            'Job#', 'User', 'MKT', 'LOC#', 'Week', 'Zone', 'Zone/Last',
-            'Restaurant', 'St Address', 'City', 'ST', 'ZIP',
-            'Mail Piece', 'Qty', 'Venue/Last', '# Sessions', 
-            'Session Type', 'RSVPs', 'RMI', 'ROR%', 'Venue/Qualifier', 
-            'RSVPs', 'ROR', 'Zone use within 12 months', 'Average ROR%']
+            'Job#', 'User', 'MKT', 'LOC#', 'Week', 
+
+            'Zone', 'Zone/Last', 'Last Venue', 'ROR%', 
+            
+            'Recommended Venue', 'St Address', 'City', 'ST', 'ZIP', 
+            'Mail Piece', 'Qty', 'Venue/Last', '# Sessions',  
+            'Session Type', 'RSVPs', 'RMI', 'ROR%', 
+            
+            'Venue/Qualifier',  'RSVPs', 'ROR%', 
+            
+            'Zone Use', 'Average ROR%']
 
         ws.append(headers)
 
