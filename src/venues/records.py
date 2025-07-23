@@ -28,6 +28,7 @@ class VenueRecord:
         # in the same way, that's okay.
         try:
             return hash((
+                self.market,
                 self.zone,
                 re.findall(r'[0-9]+', self.street)[0]
             ))
