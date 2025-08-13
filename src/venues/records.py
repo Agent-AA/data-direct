@@ -28,6 +28,7 @@ class VenueRecord:
         # in the same way, that's okay.
         try:
             return hash((
+                self.market,
                 self.zone,
                 re.findall(r'[0-9]+', self.street)[0]
             ))
@@ -136,9 +137,9 @@ class VenueRecord:
 
                 last_zone_venue = otherVenue
         
+        num_zone_visits = 0
         # Calculate number of times we have visited this zone since the cutoff date
         # since data before cutoff is already excluded, we simply count as normal
-        num_zone_visits = len(self.job_records)
         for venue in venue_records:
 
             if (venue.zone == self.zone
